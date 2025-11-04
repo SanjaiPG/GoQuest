@@ -8,6 +8,9 @@ import com.runanywhere.sdk.models.ModelInfo
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.launch
+import com.runanywhere.startup_hackathon20.data.DI
+import com.runanywhere.startup_hackathon20.data.model.Plan
+import com.runanywhere.startup_hackathon20.data.model.PlanForm
 
 // Simple Message Data Class
 data class ChatMessage(
@@ -124,5 +127,40 @@ class ChatViewModel : ViewModel() {
 
     fun refreshModels() {
         loadAvailableModels()
+    }
+
+    // Create a simple placeholder plan from a form and save it to the repository.
+    // This provides the integration point used by MakePlanScreen.
+    fun generatePlanFromForm(form: PlanForm, onComplete: (String) -> Unit) {
+        viewModelScope.launch {
+            _isLoading.value = true
+            try {
+                val title = "${form.from} → ${form.to} (${form.nights} nights)"
+                val markdown = buildString {
+                    appendLine("# $title")
+                    appendLine()
+                    appendLine("**Start date:** ${form.startDate}")
+                    appendLine("**People:** ${form.people}")
+                    appendLine("**Budget:** ${form.budget}")
+                    appendLine()
+                    for (i in 1..form.nights) {
+                        appendLine("## Day $i")
+                        appendLine("- Sample activity for day $i")
+                        appendLine()
+                    }
+                    appendLine("\n_Generated plan (placeholder)_")
+                }
+
+                val id = java.util.UUID.randomUUID().toString()
+                val plan = Plan(id = id, title = title, markdownItinerary = markdown, destinationId = form.to)
+                DI.repo.savePlan(plan)
+                _statusMessage.value = "Plan generated"
+                onComplete(id)
+            } catch (e: Exception) {
+                _statusMessage.value = "Error generating plan: ${e.message}"
+            } finally {
+                _isLoading.value = false
+            }
+        }
     }
 }

@@ -14,6 +14,7 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
 import androidx.lifecycle.viewmodel.compose.viewModel
+import com.runanywhere.startup_hackathon20.ui.AppRoot
 import com.runanywhere.startup_hackathon20.ui.theme.Startup_hackathon20Theme
 
 class MainActivity : ComponentActivity() {
@@ -22,13 +23,14 @@ class MainActivity : ComponentActivity() {
         enableEdgeToEdge()
         setContent {
             Startup_hackathon20Theme {
-                ChatScreen()
+                AppRoot()
             }
         }
     }
 }
 
 @OptIn(ExperimentalMaterial3Api::class)
+@Suppress("UNUSED_VALUE", "ASSIGNED_VALUE_IS_NEVER_READ", "ASSIGNED_BUT_NEVER_ACCESSED_VARIABLE")
 @Composable
 fun ChatScreen(viewModel: ChatViewModel = viewModel()) {
     val messages by viewModel.messages.collectAsState()
@@ -46,7 +48,7 @@ fun ChatScreen(viewModel: ChatViewModel = viewModel()) {
             TopAppBar(
                 title = { Text("AI Chat") },
                 actions = {
-                    TextButton(onClick = { showModelSelector = !showModelSelector }) {
+                    TextButton(onClick = { showModelSelector = true }) {
                         Text("Models")
                     }
                 }
@@ -87,7 +89,8 @@ fun ChatScreen(viewModel: ChatViewModel = viewModel()) {
                     currentModelId = currentModelId,
                     onDownload = { modelId -> viewModel.downloadModel(modelId) },
                     onLoad = { modelId -> viewModel.loadModel(modelId) },
-                    onRefresh = { viewModel.refreshModels() }
+                    onRefresh = { viewModel.refreshModels() },
+                    onClose = { showModelSelector = false }
                 )
             }
 
@@ -175,7 +178,8 @@ fun ModelSelector(
     currentModelId: String?,
     onDownload: (String) -> Unit,
     onLoad: (String) -> Unit,
-    onRefresh: () -> Unit
+    onRefresh: () -> Unit,
+    onClose: () -> Unit
 ) {
     Surface(
         modifier = Modifier.fillMaxWidth(),
@@ -191,8 +195,14 @@ fun ModelSelector(
                     text = "Available Models",
                     style = MaterialTheme.typography.titleMedium
                 )
-                TextButton(onClick = onRefresh) {
-                    Text("Refresh")
+                Row {
+                    TextButton(onClick = onRefresh) {
+                        Text("Refresh")
+                    }
+                    Spacer(modifier = Modifier.width(8.dp))
+                    TextButton(onClick = onClose) {
+                        Text("Close")
+                    }
                 }
             }
 
