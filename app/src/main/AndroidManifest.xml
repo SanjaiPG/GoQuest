@@ -24,7 +24,7 @@
         <!-- Google Maps API Key -->
         <meta-data
             android:name="com.google.android.geo.API_KEY"
-            android:value="AIzaSyBdVl-cTICSwYKrZ95SuvNw7dbMuDt1KG0" />
+            android:value="AIzaSyC-bN7yczlepCanvEARrUrcWNRj52Qqnss" />
 
         <activity
             android:name=".MainActivity"

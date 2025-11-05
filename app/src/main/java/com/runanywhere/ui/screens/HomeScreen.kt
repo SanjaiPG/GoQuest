@@ -1,12 +1,15 @@
 package com.runanywhere.startup_hackathon20.ui.screens
 
 import androidx.compose.foundation.background
+import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.lazy.*
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.verticalScroll
+import androidx.compose.foundation.Canvas
+import androidx.compose.foundation.gestures.detectTransformGestures
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.Search
 import androidx.compose.material.icons.filled.Person
@@ -25,6 +28,7 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Brush
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.graphics.graphicsLayer
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.input.PasswordVisualTransformation
 import androidx.compose.ui.text.input.TextFieldValue
@@ -32,6 +36,7 @@ import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import com.runanywhere.startup_hackathon20.data.DI
 import androidx.compose.runtime.collectAsState
+import androidx.compose.ui.input.pointer.pointerInput
 import com.google.android.gms.maps.CameraUpdateFactory
 import kotlinx.coroutines.flow.StateFlow
 import com.google.android.gms.maps.model.CameraPosition
@@ -52,6 +57,7 @@ fun HomeScreen(
 
     // Use StateFlow for reactive updates
     val likedDestinations by repo.likedDestinations.collectAsState()
+    val likedDestinationsList = likedDestinations.toList()
     val likedPlans by repo.likedPlans.collectAsState()
     val plansVersion by repo.plansVersion.collectAsState()
 
@@ -584,88 +590,31 @@ fun MapScreen(
     val repo = remember { DI.repo }
     val destinations = remember { repo.getPopularDestinations() }
     val likedDestinations by repo.likedDestinations.collectAsState()
+    val likedDestinationsList = likedDestinations.toList()
 
-    var selectedDestination by remember {
-        mutableStateOf<com.runanywhere.startup_hackathon20.data.model.Destination?>(
-            null
-        )
-    }
-    var searchQuery by remember { mutableStateOf("") }
-    var selectedRegion by remember { mutableStateOf("All") }
+    var selectedDestination by remember { mutableStateOf<com.runanywhere.startup_hackathon20.data.model.Destination?>(null) }
+    var showListView by remember { mutableStateOf(false) }
 
-    // Group destinations by continent/region
-    val destinationsByRegion = remember(destinations) {
-        destinations.groupBy { dest ->
-            when {
-                dest.country in listOf("USA", "Canada", "Mexico", "Brazil") -> "Americas"
-                dest.country in listOf(
-                    "UK",
-                    "France",
-                    "Italy",
-                    "Spain",
-                    "Germany",
-                    "Russia",
-                    "Netherlands",
-                    "Switzerland",
-                    "Greece"
-                ) -> "Europe"
-
-                dest.country in listOf(
-                    "India",
-                    "China",
-                    "Japan",
-                    "Thailand",
-                    "Singapore",
-                    "Malaysia",
-                    "Indonesia",
-                    "South Korea",
-                    "UAE"
-                ) -> "Asia"
-
-                dest.country in listOf("Australia", "New Zealand") -> "Oceania"
-                dest.country in listOf("South Africa", "Egypt", "Morocco") -> "Africa"
-                else -> "Other"
-            }
-        }
+    // Center camera on first destination or world center
+    val initialPosition = if (destinations.isNotEmpty()) {
+        LatLng(20.0, 0.0)
+    } else {
+        LatLng(0.0, 0.0)
     }
 
-    val regions = listOf("All") + destinationsByRegion.keys.sorted()
-
-    // Filter destinations
-    val filteredDestinations = remember(searchQuery, selectedRegion, destinations) {
-        val regionFiltered = if (selectedRegion == "All") {
-            destinations
-        } else {
-            destinationsByRegion[selectedRegion] ?: emptyList()
-        }
-
-        if (searchQuery.isBlank()) {
-            regionFiltered
-        } else {
-            regionFiltered.filter {
-                it.name.contains(searchQuery, ignoreCase = true) ||
-                        it.country.contains(searchQuery, ignoreCase = true)
-            }
-        }
+    val cameraPositionState = rememberCameraPositionState {
+        position = CameraPosition.fromLatLngZoom(initialPosition, 2f)
     }
 
     Box(
         modifier = Modifier
             .fillMaxSize()
-            .background(
-                Brush.verticalGradient(
-                    colors = listOf(
-                        Color(0xFF0C4A6E),
-                        Color(0xFF075985),
-                        Color(0xFF0369A1)
-                    )
-                )
-            )
+            .background(Color(0xFF0C4A6E))
     ) {
         Column(
             modifier = Modifier.fillMaxSize()
         ) {
-            // Modern Header with Search
+            // Header
             Surface(
                 modifier = Modifier.fillMaxWidth(),
                 color = Color.Transparent
@@ -683,7 +632,6 @@ fun MapScreen(
                         )
                         .padding(20.dp)
                 ) {
-                    // Top row with back button and title
                     Row(
                         modifier = Modifier.fillMaxWidth(),
                         horizontalArrangement = Arrangement.SpaceBetween,
@@ -709,180 +657,56 @@ fun MapScreen(
 
                             Column {
                                 Text(
-                                    "🗺️ Explore World",
+                                    "🗺️ World Map",
                                     style = MaterialTheme.typography.headlineSmall,
                                     fontWeight = FontWeight.Bold,
                                     color = Color.White
                                 )
                                 Text(
-                                    "${filteredDestinations.size} destinations",
+                                    "${destinations.size} destinations",
                                     style = MaterialTheme.typography.bodyMedium,
                                     color = Color.White.copy(alpha = 0.9f)
                                 )
                             }
                         }
-                    }
 
-                    Spacer(Modifier.height(16.dp))
-
-                    // Search Bar
-                    OutlinedTextField(
-                        value = searchQuery,
-                        onValueChange = { searchQuery = it },
-                        modifier = Modifier
-                            .fillMaxWidth()
-                            .clip(RoundedCornerShape(16.dp)),
-                        placeholder = {
-                            Text(
-                                "Search destinations or countries...",
-                                color = Color.Gray.copy(alpha = 0.7f)
-                            )
-                        },
-                        leadingIcon = {
-                            Icon(
-                                Icons.Filled.Search,
-                                contentDescription = "Search",
-                                tint = Color(0xFF0EA5E9)
-                            )
-                        },
-                        trailingIcon = {
-                            if (searchQuery.isNotEmpty()) {
-                                IconButton(onClick = { searchQuery = "" }) {
-                                    Icon(
-                                        Icons.Filled.Close,
-                                        contentDescription = "Clear",
-                                        tint = Color.Gray
-                                    )
-                                }
-                            }
-                        },
-                        colors = OutlinedTextFieldDefaults.colors(
-                            focusedContainerColor = Color.White,
-                            unfocusedContainerColor = Color.White,
-                            focusedBorderColor = Color.Transparent,
-                            unfocusedBorderColor = Color.Transparent
-                        ),
-                        shape = RoundedCornerShape(16.dp),
-                        singleLine = true
-                    )
-
-                    Spacer(Modifier.height(12.dp))
-
-                    // Region Filter Chips
-                    LazyRow(
-                        horizontalArrangement = Arrangement.spacedBy(8.dp)
-                    ) {
-                        items(regions) { region ->
-                            FilterChip(
-                                selected = selectedRegion == region,
-                                onClick = { selectedRegion = region },
-                                label = {
-                                    Text(
-                                        when (region) {
-                                            "All" -> "🌍 All"
-                                            "Asia" -> "🌏 Asia"
-                                            "Europe" -> "🇪🇺 Europe"
-                                            "Americas" -> "🌎 Americas"
-                                            "Africa" -> "🌍 Africa"
-                                            "Oceania" -> "🇦🇺 Oceania"
-                                            else -> region
-                                        }
-                                    )
-                                },
-                                colors = FilterChipDefaults.filterChipColors(
-                                    selectedContainerColor = Color.White,
-                                    selectedLabelColor = Color(0xFF0EA5E9),
-                                    containerColor = Color.White.copy(alpha = 0.2f),
-                                    labelColor = Color.White
+                        // List View Toggle
+                        IconButton(
+                            onClick = { showListView = !showListView },
+                            modifier = Modifier
+                                .size(44.dp)
+                                .background(
+                                    if (showListView) Color.White else Color.White.copy(alpha = 0.2f),
+                                    CircleShape
                                 )
+                        ) {
+                            Icon(
+                                Icons.Filled.List,
+                                contentDescription = if (showListView) "Map View" else "List View",
+                                tint = if (showListView) Color(0xFF0EA5E9) else Color.White,
+                                modifier = Modifier.size(24.dp)
                             )
                         }
                     }
                 }
             }
 
-            // Destinations Grid
-            if (filteredDestinations.isEmpty()) {
-                // Empty state
-                Box(
-                    modifier = Modifier
-                        .fillMaxSize()
-                        .padding(32.dp),
-                    contentAlignment = Alignment.Center
-                ) {
-                    Column(
-                        horizontalAlignment = Alignment.CenterHorizontally,
-                        verticalArrangement = Arrangement.spacedBy(16.dp)
-                    ) {
-                        Text(
-                            "🔍",
-                            style = MaterialTheme.typography.displayLarge
-                        )
-                        Text(
-                            "No destinations found",
-                            style = MaterialTheme.typography.titleLarge,
-                            fontWeight = FontWeight.Bold,
-                            color = Color.White
-                        )
-                        Text(
-                            "Try a different search or filter",
-                            style = MaterialTheme.typography.bodyMedium,
-                            color = Color.White.copy(alpha = 0.8f)
-                        )
-                        Button(
-                            onClick = {
-                                searchQuery = ""
-                                selectedRegion = "All"
-                            },
-                            colors = ButtonDefaults.buttonColors(
-                                containerColor = Color.White
-                            )
-                        ) {
-                            Text("Clear Filters", color = Color(0xFF0EA5E9))
-                        }
-                    }
-                }
-            } else {
+            // Main Content
+            if (showListView) {
+                // List View
                 LazyColumn(
                     contentPadding = PaddingValues(16.dp),
                     verticalArrangement = Arrangement.spacedBy(16.dp),
                     modifier = Modifier.fillMaxSize()
                 ) {
-                    // Group by country for better organization
-                    val groupedByCountry = filteredDestinations.groupBy { it.country }
+                    val groupedByCountry = destinations.groupBy { it.country }
 
-                    groupedByCountry.forEach { (country, destinations) ->
+                    groupedByCountry.forEach { (country, countryDestinations) ->
                         item {
-                            // Country Header
-                            Row(
-                                verticalAlignment = Alignment.CenterVertically,
-                                horizontalArrangement = Arrangement.spacedBy(8.dp),
-                                modifier = Modifier.padding(vertical = 8.dp)
-                            ) {
-                                Surface(
-                                    color = Color.White.copy(alpha = 0.2f),
-                                    shape = RoundedCornerShape(8.dp)
-                                ) {
-                                    Text(
-                                        country,
-                                        modifier = Modifier.padding(
-                                            horizontal = 12.dp,
-                                            vertical = 6.dp
-                                        ),
-                                        style = MaterialTheme.typography.titleMedium,
-                                        fontWeight = FontWeight.Bold,
-                                        color = Color.White
-                                    )
-                                }
-                                Text(
-                                    "${destinations.size}",
-                                    style = MaterialTheme.typography.bodyMedium,
-                                    color = Color.White.copy(alpha = 0.7f)
-                                )
-                            }
+                            CountryHeader(country = country, count = countryDestinations.size)
                         }
 
-                        items(destinations) { destination ->
+                        items(countryDestinations) { destination ->
                             MapDestinationCard(
                                 destination = destination,
                                 isLiked = likedDestinations.contains(destination.id),
@@ -894,6 +718,101 @@ fun MapScreen(
                                         repo.likeDestination(destination.id)
                                     }
                                 }
+                            )
+                        }
+                    }
+                }
+            } else {
+                // Google Maps View
+                Box(modifier = Modifier.fillMaxSize()) {
+                    GoogleMap(
+                        modifier = Modifier.fillMaxSize(),
+                        cameraPositionState = cameraPositionState,
+                        uiSettings = MapUiSettings(
+                            myLocationButtonEnabled = false,
+                            zoomControlsEnabled = false,
+                            mapToolbarEnabled = false,
+                            compassEnabled = true,
+                            rotationGesturesEnabled = true,
+                            scrollGesturesEnabled = true,
+                            tiltGesturesEnabled = false,
+                            zoomGesturesEnabled = true
+                        ),
+                        properties = MapProperties(
+                            isMyLocationEnabled = false,
+                            mapType = MapType.NORMAL
+                        )
+                    ) {
+                        // Add markers for all destinations
+                        destinations.forEach { destination ->
+                            Marker(
+                                state = MarkerState(
+                                    position = LatLng(destination.lat, destination.lng)
+                                ),
+                                title = destination.name,
+                                snippet = "${destination.country} - ${destination.rating}⭐",
+                                onClick = {
+                                    selectedDestination = destination
+                                    false
+                                }
+                            )
+                        }
+                    }
+
+                    // Custom Zoom Controls
+                    Column(
+                        modifier = Modifier
+                            .align(Alignment.BottomEnd)
+                            .padding(16.dp),
+                        verticalArrangement = Arrangement.spacedBy(8.dp)
+                    ) {
+                        FloatingActionButton(
+                            onClick = {
+                                val currentZoom = cameraPositionState.position.zoom
+                                cameraPositionState.move(
+                                    CameraUpdateFactory.zoomTo((currentZoom + 1f).coerceAtMost(20f))
+                                )
+                            },
+                            containerColor = Color.White,
+                            modifier = Modifier.size(48.dp)
+                        ) {
+                            Text(
+                                "+",
+                                fontSize = 24.sp,
+                                fontWeight = FontWeight.Bold,
+                                color = Color(0xFF0EA5E9)
+                            )
+                        }
+                        FloatingActionButton(
+                            onClick = {
+                                val currentZoom = cameraPositionState.position.zoom
+                                cameraPositionState.move(
+                                    CameraUpdateFactory.zoomTo((currentZoom - 1f).coerceAtLeast(2f))
+                                )
+                            },
+                            containerColor = Color.White,
+                            modifier = Modifier.size(48.dp)
+                        ) {
+                            Text(
+                                "−",
+                                fontSize = 24.sp,
+                                fontWeight = FontWeight.Bold,
+                                color = Color(0xFF0EA5E9)
+                            )
+                        }
+                        FloatingActionButton(
+                            onClick = {
+                                cameraPositionState.move(
+                                    CameraUpdateFactory.newLatLngZoom(initialPosition, 2f)
+                                )
+                            },
+                            containerColor = Color.White,
+                            modifier = Modifier.size(48.dp)
+                        ) {
+                            Icon(
+                                Icons.Filled.LocationOn,
+                                contentDescription = "Reset",
+                                tint = Color(0xFF0EA5E9)
                             )
                         }
                     }
@@ -920,6 +839,73 @@ fun MapScreen(
                 }
             )
         }
+    }
+}
+
+
+@Composable
+fun EmptyStateView(onClearFilters: () -> Unit) {
+    Box(
+        modifier = Modifier
+            .fillMaxSize()
+            .padding(32.dp),
+        contentAlignment = Alignment.Center
+    ) {
+        Column(
+            horizontalAlignment = Alignment.CenterHorizontally,
+            verticalArrangement = Arrangement.spacedBy(16.dp)
+        ) {
+            Text(
+                "🔍",
+                style = MaterialTheme.typography.displayLarge
+            )
+            Text(
+                "No destinations found",
+                style = MaterialTheme.typography.titleLarge,
+                fontWeight = FontWeight.Bold,
+                color = Color.White
+            )
+            Text(
+                "Try a different search or filter",
+                style = MaterialTheme.typography.bodyMedium,
+                color = Color.White.copy(alpha = 0.8f)
+            )
+            Button(
+                onClick = onClearFilters,
+                colors = ButtonDefaults.buttonColors(
+                    containerColor = Color.White
+                )
+            ) {
+                Text("Clear Filters", color = Color(0xFF0EA5E9))
+            }
+        }
+    }
+}
+
+@Composable
+fun CountryHeader(country: String, count: Int) {
+    Row(
+        verticalAlignment = Alignment.CenterVertically,
+        horizontalArrangement = Arrangement.spacedBy(8.dp),
+        modifier = Modifier.padding(vertical = 8.dp)
+    ) {
+        Surface(
+            color = Color.White.copy(alpha = 0.2f),
+            shape = RoundedCornerShape(8.dp)
+        ) {
+            Text(
+                country,
+                modifier = Modifier.padding(horizontal = 12.dp, vertical = 6.dp),
+                style = MaterialTheme.typography.titleMedium,
+                fontWeight = FontWeight.Bold,
+                color = Color.White
+            )
+        }
+        Text(
+            "$count",
+            style = MaterialTheme.typography.bodyMedium,
+            color = Color.White.copy(alpha = 0.7f)
+        )
     }
 }
 

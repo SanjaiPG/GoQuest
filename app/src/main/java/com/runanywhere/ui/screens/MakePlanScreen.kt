@@ -30,6 +30,10 @@ import java.text.SimpleDateFormat
 import java.util.*
 import androidx.compose.ui.graphics.Brush
 import androidx.compose.ui.graphics.Color
+import com.google.android.gms.maps.model.CameraPosition
+import com.google.android.gms.maps.model.LatLng
+import com.google.maps.android.compose.*
+import androidx.compose.ui.draw.clip
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
@@ -186,6 +190,38 @@ fun MakePlanScreen(
                     )
                 }
             )
+
+            // Map Preview of destination
+            if (destination != null && destination.lat != null && destination.lng != null) {
+                val destLatLng = LatLng(destination.lat, destination.lng)
+                val cameraPositionState = rememberCameraPositionState {
+                    position = CameraPosition.fromLatLngZoom(destLatLng, 11.5f)
+                }
+                Spacer(modifier = Modifier.height(8.dp))
+                Box(
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .height(200.dp)
+                        .clip(RoundedCornerShape(16.dp))
+                ) {
+                    GoogleMap(
+                        cameraPositionState = cameraPositionState,
+                        uiSettings = MapUiSettings(
+                            zoomControlsEnabled = false,
+                            scrollGesturesEnabled = false,
+                            tiltGesturesEnabled = false
+                        ),
+                        properties = MapProperties(
+                            isMyLocationEnabled = false,
+                        )
+                    ) {
+                        Marker(
+                            state = MarkerState(position = destLatLng),
+                            title = destination.name
+                        )
+                    }
+                }
+            }
 
             // Trip Details Section
             Text(
