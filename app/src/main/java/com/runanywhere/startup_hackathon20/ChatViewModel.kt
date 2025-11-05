@@ -263,25 +263,21 @@ class ChatViewModel : ViewModel() {
         viewModelScope.launch {
             _isLoading.value = true
             try {
-                // Generate AI-powered itinerary silently (no chat messages)
-                val prompt = """Create a detailed travel itinerary for the following trip:
-                    |From: ${form.from}
-                    |To: ${form.to}
-                    |Start Date: ${form.startDate}
-                    |Duration: ${form.nights} nights
-                    |Number of People: ${form.people}
-                    |Budget: ₹${form.budget}
+                // Simplified, concise prompt for faster generation
+                val prompt = """Create a travel plan:
+                    |Trip: ${form.from} to ${form.to}
+                    |Dates: ${form.startDate} (${form.nights} nights)
+                    |People: ${form.people}, Budget: ₹${form.budget}
                     |
-                    |Please provide:
-                    |1. Daily itinerary with activities, timings, and estimated costs
-                    |2. Recommended accommodations
-                    |3. Transportation suggestions
-                    |4. Must-visit attractions
-                    |5. Food recommendations
-                    |6. Budget breakdown
-                    |7. Travel tips and important notes
+                    |Provide:
+                    |Day 1-${form.nights}: Activities, timings, costs
+                    |Hotels: 2-3 recommendations
+                    |Transport: Best options
+                    |Must-see: Top 3 attractions
+                    |Food: Local dishes to try
+                    |Tips: Important notes
                     |
-                    |Format the response clearly with day-wise breakdown.""".trimMargin()
+                    |Keep it concise and practical.""".trimMargin()
 
                 var aiItinerary = ""
 
@@ -322,28 +318,24 @@ class ChatViewModel : ViewModel() {
             try {
                 // Add form details as user message
                 val formSummary =
-                    "Generate a detailed ${form.nights}-night travel plan from ${form.from} to ${form.to}, starting ${form.startDate}, for ${form.people} people with a budget of ₹${form.budget}"
+                    "Generate a ${form.nights}-night travel plan: ${form.from} to ${form.to}, ${form.startDate}, ${form.people} people, ₹${form.budget} budget"
                 _messages.value += ChatMessage(formSummary, isUser = true)
 
-                // Generate AI-powered itinerary
-                val prompt = """Create a detailed travel itinerary for the following trip:
-                    |From: ${form.from}
-                    |To: ${form.to}
-                    |Start Date: ${form.startDate}
-                    |Duration: ${form.nights} nights
-                    |Number of People: ${form.people}
-                    |Budget: ₹${form.budget}
+                // Simplified prompt for faster generation
+                val prompt = """Create a travel plan:
+                    |Trip: ${form.from} to ${form.to}
+                    |Dates: ${form.startDate} (${form.nights} nights)
+                    |People: ${form.people}, Budget: ₹${form.budget}
                     |
-                    |Please provide:
-                    |1. Daily itinerary with activities, timings, and estimated costs
-                    |2. Recommended accommodations
-                    |3. Transportation suggestions
-                    |4. Must-visit attractions
-                    |5. Food recommendations
-                    |6. Budget breakdown
-                    |7. Travel tips and important notes
+                    |Provide:
+                    |Day 1-${form.nights}: Activities, timings, costs
+                    |Hotels: 2-3 recommendations
+                    |Transport: Best options
+                    |Must-see: Top 3 attractions
+                    |Food: Local dishes to try
+                    |Tips: Important notes
                     |
-                    |Format the response clearly with day-wise breakdown.""".trimMargin()
+                    |Keep it concise and practical.""".trimMargin()
 
                 var aiItinerary = ""
                 var tokenCount = 0
@@ -352,8 +344,8 @@ class ChatViewModel : ViewModel() {
                     aiItinerary += token
                     tokenCount++
 
-                    // Update UI every 3 tokens for faster plan generation
-                    if (tokenCount % 3 == 0) {
+                    // Update UI every 5 tokens for faster visual feedback
+                    if (tokenCount % 5 == 0) {
                         val currentMessages = _messages.value.toMutableList()
                         val planData = PlanDisplayData(
                             from = form.from,

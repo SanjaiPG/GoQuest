@@ -22,10 +22,13 @@ import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Brush
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.text.font.FontWeight
+import androidx.compose.ui.text.input.PasswordVisualTransformation
 import androidx.compose.ui.text.input.TextFieldValue
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import com.runanywhere.startup_hackathon20.data.DI
+import androidx.compose.runtime.collectAsState
+import kotlinx.coroutines.flow.StateFlow
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
@@ -38,9 +41,20 @@ fun HomeScreen(
     var query by remember { mutableStateOf(TextFieldValue("")) }
     val all = remember { repo.getPopularDestinations() }
     val filtered = all.filter { it.name.contains(query.text, true) || it.country.contains(query.text, true) }
-    
-    // Track liked destinations
-    val likedDestinations = remember { mutableStateSetOf<String>() }
+
+    // Use StateFlow for reactive updates
+    val likedDestinations by repo.likedDestinations.collectAsState()
+    val likedPlans by repo.likedPlans.collectAsState()
+    val plansVersion by repo.plansVersion.collectAsState()
+
+    // Get current user for greeting
+    val currentUser = remember { repo.getCurrentUser() }
+    val userName = currentUser?.username ?: "Traveler"
+
+    // Get all plans count - will update when plansVersion changes (increments when new plan is created)
+    val allPlansCount = remember(plansVersion) {
+        repo.getAllPlans().size
+    }
 
     Column(Modifier
         .fillMaxSize()
@@ -96,7 +110,7 @@ fun HomeScreen(
                         
                         Column {
                             Text(
-                                "Hello, Traveler! ",
+                                "Hello, $userName! ",
                                 style = MaterialTheme.typography.titleLarge,
                                 fontWeight = FontWeight.Bold,
                                 color = Color.White
@@ -364,7 +378,7 @@ fun HomeScreen(
                         }
                         Column {
                             Text(
-                                "0",
+                                "$allPlansCount",
                                 style = MaterialTheme.typography.headlineMedium,
                                 fontWeight = FontWeight.Bold,
                                 color = Color(0xFF3730A3)
@@ -520,9 +534,8 @@ fun HomeScreen(
                             IconButton(
                                 onClick = {
                                     if (likedDestinations.contains(d.id)) {
-                                        likedDestinations.remove(d.id)
+                                        repo.unlikeDestination(d.id)
                                     } else {
-                                        likedDestinations.add(d.id)
                                         repo.likeDestination(d.id)
                                     }
                                 },
@@ -746,10 +759,19 @@ fun ProfileScreen(onBack: () -> Unit = {}) {
     val user = remember { repo.getCurrentUser() }
 
     var isEditing by remember { mutableStateOf(false) }
+    var isChangingPassword by remember { mutableStateOf(false) }
     var name by remember { mutableStateOf(user?.name ?: "User") }
-    var email by remember { mutableStateOf(user?.email ?: "user@example.com") }
+    var username by remember { mutableStateOf(user?.username ?: "username") }
+    var email by remember { mutableStateOf(user?.email ?: "") }
+    var countryCode by remember { mutableStateOf(user?.countryCode ?: "+91") }
     var phone by remember { mutableStateOf(user?.phone ?: "") }
-    var location by remember { mutableStateOf(user?.location ?: "") }
+
+    // Password change fields
+    var oldPassword by remember { mutableStateOf("") }
+    var newPassword by remember { mutableStateOf("") }
+    var confirmPassword by remember { mutableStateOf("") }
+    var passwordError by remember { mutableStateOf("") }
+    var passwordSuccess by remember { mutableStateOf("") }
 
     val scrollState = rememberScrollState()
 
@@ -833,16 +855,10 @@ fun ProfileScreen(onBack: () -> Unit = {}) {
             }
 
             Text(
-                name,
+                username,
                 style = MaterialTheme.typography.headlineMedium,
                 fontWeight = FontWeight.Bold,
                 color = Color(0xFF1F2937)
-            )
-
-            Text(
-                email,
-                style = MaterialTheme.typography.bodyLarge,
-                color = Color(0xFF6B7280)
             )
 
             // User Stats Card
@@ -965,28 +981,183 @@ fun ProfileScreen(onBack: () -> Unit = {}) {
                         )
 
                         OutlinedTextField(
-                            value = phone,
-                            onValueChange = { phone = it },
-                            label = { Text("Phone") },
-                            leadingIcon = { Text("📱", fontSize = 20.sp) },
+                            value = email,
+                            onValueChange = { email = it },
+                            label = { Text("Email") },
+                            leadingIcon = { Text("📧", fontSize = 20.sp) },
                             modifier = Modifier.fillMaxWidth(),
                             shape = RoundedCornerShape(12.dp)
                         )
 
                         OutlinedTextField(
-                            value = location,
-                            onValueChange = { location = it },
-                            label = { Text("Location") },
-                            leadingIcon = { Text("📍", fontSize = 20.sp) },
+                            value = phone,
+                            onValueChange = { phone = it.filter { char -> char.isDigit() } },
+                            label = { Text("Phone") },
+                            leadingIcon = { Text("📱", fontSize = 20.sp) },
                             modifier = Modifier.fillMaxWidth(),
                             shape = RoundedCornerShape(12.dp)
                         )
                     } else {
                         // Display mode
+                        ProfileDetailRow("🔑", "Username", username)
                         ProfileDetailRow("📧", "Email", email)
-                        ProfileDetailRow("📱", "Phone", phone.ifEmpty { "Not set" })
-                        ProfileDetailRow("📍", "Location", location.ifEmpty { "Not set" })
+                        ProfileDetailRow(
+                            "📱",
+                            "Phone",
+                            if (phone.isNotEmpty()) "$countryCode $phone" else "Not set"
+                        )
                         ProfileDetailRow("🎂", "Member Since", "January 2024")
+                    }
+                }
+            }
+
+            // Password Change Card
+            Card(
+                modifier = Modifier.fillMaxWidth(),
+                shape = RoundedCornerShape(20.dp),
+                colors = CardDefaults.cardColors(
+                    containerColor = Color.White
+                ),
+                elevation = CardDefaults.cardElevation(
+                    defaultElevation = 4.dp
+                )
+            ) {
+                Column(
+                    modifier = Modifier.padding(20.dp),
+                    verticalArrangement = Arrangement.spacedBy(16.dp)
+                ) {
+                    Row(
+                        modifier = Modifier.fillMaxWidth(),
+                        horizontalArrangement = Arrangement.SpaceBetween,
+                        verticalAlignment = Alignment.CenterVertically
+                    ) {
+                        Text(
+                            "🔒 Change Password",
+                            style = MaterialTheme.typography.titleLarge,
+                            fontWeight = FontWeight.Bold,
+                            color = Color(0xFF1F2937)
+                        )
+                        IconButton(onClick = {
+                            isChangingPassword = !isChangingPassword
+                            if (!isChangingPassword) {
+                                oldPassword = ""
+                                newPassword = ""
+                                confirmPassword = ""
+                                passwordError = ""
+                                passwordSuccess = ""
+                            }
+                        }) {
+                            Text(
+                                if (isChangingPassword) "✕" else "🔑",
+                                fontSize = 20.sp
+                            )
+                        }
+                    }
+
+                    Divider(color = Color(0xFFE5E7EB))
+
+                    if (isChangingPassword) {
+                        OutlinedTextField(
+                            value = oldPassword,
+                            onValueChange = { oldPassword = it },
+                            label = { Text("Current Password") },
+                            leadingIcon = { Text("🔒", fontSize = 20.sp) },
+                            modifier = Modifier.fillMaxWidth(),
+                            shape = RoundedCornerShape(12.dp),
+                            visualTransformation = PasswordVisualTransformation(),
+                            singleLine = true
+                        )
+
+                        OutlinedTextField(
+                            value = newPassword,
+                            onValueChange = { newPassword = it },
+                            label = { Text("New Password") },
+                            leadingIcon = { Text("🔑", fontSize = 20.sp) },
+                            modifier = Modifier.fillMaxWidth(),
+                            shape = RoundedCornerShape(12.dp),
+                            visualTransformation = PasswordVisualTransformation(),
+                            singleLine = true
+                        )
+
+                        OutlinedTextField(
+                            value = confirmPassword,
+                            onValueChange = { confirmPassword = it },
+                            label = { Text("Confirm New Password") },
+                            leadingIcon = { Text("✅", fontSize = 20.sp) },
+                            modifier = Modifier.fillMaxWidth(),
+                            shape = RoundedCornerShape(12.dp),
+                            visualTransformation = PasswordVisualTransformation(),
+                            singleLine = true
+                        )
+
+                        if (passwordError.isNotEmpty()) {
+                            Text(
+                                passwordError,
+                                color = MaterialTheme.colorScheme.error,
+                                style = MaterialTheme.typography.bodyMedium
+                            )
+                        }
+
+                        if (passwordSuccess.isNotEmpty()) {
+                            Text(
+                                passwordSuccess,
+                                color = Color(0xFF10B981),
+                                style = MaterialTheme.typography.bodyMedium,
+                                fontWeight = FontWeight.Bold
+                            )
+                        }
+
+                        Button(
+                            onClick = {
+                                passwordError = ""
+                                passwordSuccess = ""
+
+                                when {
+                                    oldPassword.isBlank() || newPassword.isBlank() || confirmPassword.isBlank() -> {
+                                        passwordError = "Please fill all password fields"
+                                    }
+
+                                    newPassword.length < 6 -> {
+                                        passwordError = "New password must be at least 6 characters"
+                                    }
+
+                                    newPassword != confirmPassword -> {
+                                        passwordError = "New passwords don't match"
+                                    }
+
+                                    oldPassword == newPassword -> {
+                                        passwordError =
+                                            "New password must be different from old password"
+                                    }
+
+                                    else -> {
+                                        val success =
+                                            repo.updatePassword(username, oldPassword, newPassword)
+                                        if (success) {
+                                            passwordSuccess = "✅ Password updated successfully!"
+                                            oldPassword = ""
+                                            newPassword = ""
+                                            confirmPassword = ""
+                                        } else {
+                                            passwordError = "Current password is incorrect"
+                                        }
+                                    }
+                                }
+                            },
+                            modifier = Modifier.fillMaxWidth(),
+                            colors = ButtonDefaults.buttonColors(
+                                containerColor = Color(0xFFEF4444)
+                            ),
+                            shape = RoundedCornerShape(12.dp)
+                        ) {
+                            Text("Update Password")
+                        }
+                    } else {
+                        Text(
+                            "Click the key icon to change your password",
+                            style = MaterialTheme.typography.bodyMedium,
+                            color = Color(0xFF6B7280)
+                        )
                     }
                 }
             }
@@ -997,10 +1168,11 @@ fun ProfileScreen(onBack: () -> Unit = {}) {
                     if (isEditing) {
                         // Save changes
                         val updatedUser = com.runanywhere.startup_hackathon20.data.model.User(
-                            email = email,
+                            username = username,
                             name = name,
-                            phone = phone,
-                            location = location
+                            email = email,
+                            countryCode = countryCode,
+                            phone = phone
                         )
                         repo.updateUser(updatedUser)
                         isEditing = false

@@ -5,6 +5,7 @@ import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.verticalScroll
+import androidx.compose.foundation.clickable
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.DateRange
 import androidx.compose.material.icons.filled.Person
@@ -23,6 +24,8 @@ import androidx.compose.ui.unit.sp
 import androidx.lifecycle.viewmodel.compose.viewModel
 import com.runanywhere.startup_hackathon20.ChatViewModel
 import com.runanywhere.startup_hackathon20.data.model.PlanForm
+import java.text.SimpleDateFormat
+import java.util.*
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
@@ -47,6 +50,7 @@ fun MakePlanScreen(
 
     var expandedFood by remember { mutableStateOf(false) }
     var expandedTransport by remember { mutableStateOf(false) }
+    var showDatePicker by remember { mutableStateOf(false) }
 
     val isLoading by vm.isLoading.collectAsState()
     val modelLoaded by vm.currentModelId.collectAsState()
@@ -54,6 +58,9 @@ fun MakePlanScreen(
 
     val foodOptions = listOf("Veg", "Non-Veg", "Both")
     val transportOptions = listOf("Flight", "Train", "Bus", "Car", "Bike")
+
+    // Date formatter
+    val dateFormatter = remember { SimpleDateFormat("dd MMM yyyy", Locale.getDefault()) }
 
     Column(
         Modifier
@@ -142,13 +149,68 @@ fun MakePlanScreen(
                 modifier = Modifier.padding(top = 16.dp)
             )
 
-            CustomTextField(
+            // Date Picker with Calendar
+            OutlinedTextField(
                 value = startDate,
-                onValueChange = { startDate = it },
-                label = "Start Date",
-                placeholder = "2024-12-25",
-                icon = Icons.Filled.DateRange
+                onValueChange = {},
+                label = { Text("Start Date") },
+                placeholder = { Text("Select date") },
+                leadingIcon = {
+                    Icon(
+                        Icons.Filled.DateRange,
+                        contentDescription = null,
+                        tint = MaterialTheme.colorScheme.primary
+                    )
+                },
+                trailingIcon = {
+                    Icon(
+                        Icons.Filled.DateRange,
+                        contentDescription = "Open Calendar",
+                        tint = MaterialTheme.colorScheme.primary
+                    )
+                },
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .clickable { showDatePicker = true },
+                shape = RoundedCornerShape(12.dp),
+                colors = OutlinedTextFieldDefaults.colors(
+                    focusedBorderColor = MaterialTheme.colorScheme.primary,
+                    unfocusedBorderColor = MaterialTheme.colorScheme.outline,
+                ),
+                singleLine = true,
+                readOnly = true,
+                enabled = false
             )
+
+            // DatePickerDialog
+            if (showDatePicker) {
+                val datePickerState = rememberDatePickerState(
+                    initialSelectedDateMillis = System.currentTimeMillis()
+                )
+
+                DatePickerDialog(
+                    onDismissRequest = { showDatePicker = false },
+                    confirmButton = {
+                        TextButton(
+                            onClick = {
+                                datePickerState.selectedDateMillis?.let { millis ->
+                                    startDate = dateFormatter.format(Date(millis))
+                                }
+                                showDatePicker = false
+                            }
+                        ) {
+                            Text("OK")
+                        }
+                    },
+                    dismissButton = {
+                        TextButton(onClick = { showDatePicker = false }) {
+                            Text("Cancel")
+                        }
+                    }
+                ) {
+                    DatePicker(state = datePickerState)
+                }
+            }
 
             Row(
                 modifier = Modifier.fillMaxWidth(),
@@ -382,6 +444,45 @@ fun MakePlanScreen(
                 }
             }
 
+            // Loading indicator and helpful tip
+            if (isLoading) {
+                Card(
+                    modifier = Modifier.fillMaxWidth(),
+                    colors = CardDefaults.cardColors(
+                        containerColor = androidx.compose.ui.graphics.Color(0xFFFEF3C7)
+                    ),
+                    shape = RoundedCornerShape(16.dp),
+                    elevation = CardDefaults.cardElevation(defaultElevation = 4.dp)
+                ) {
+                    Row(
+                        modifier = Modifier.padding(20.dp),
+                        verticalAlignment = Alignment.CenterVertically,
+                        horizontalArrangement = Arrangement.spacedBy(16.dp)
+                    ) {
+                        CircularProgressIndicator(
+                            modifier = Modifier.size(40.dp),
+                            color = androidx.compose.ui.graphics.Color(0xFFF59E0B),
+                            strokeWidth = 4.dp
+                        )
+                        Column(modifier = Modifier.weight(1f)) {
+                            Text(
+                                "⚡ AI is working on your plan...",
+                                style = MaterialTheme.typography.titleMedium,
+                                fontWeight = FontWeight.Bold,
+                                color = androidx.compose.ui.graphics.Color(0xFF92400E)
+                            )
+                            Spacer(Modifier.height(4.dp))
+                            Text(
+                                "This may take 30-60 seconds on-device",
+                                style = MaterialTheme.typography.bodySmall,
+                                color = androidx.compose.ui.graphics.Color(0xFF92400E)
+                                    .copy(alpha = 0.8f)
+                            )
+                        }
+                    }
+                }
+            }
+
             Spacer(Modifier.height(8.dp))
 
             // Generate Button
@@ -412,7 +513,7 @@ fun MakePlanScreen(
                     Spacer(Modifier.width(12.dp))
                 }
                 Text(
-                    if (isLoading) "Generating..." else "Generate Itinerary",
+                    if (isLoading) "Generating..." else "✨ Generate Itinerary",
                     style = MaterialTheme.typography.titleMedium,
                     fontWeight = FontWeight.Bold
                 )

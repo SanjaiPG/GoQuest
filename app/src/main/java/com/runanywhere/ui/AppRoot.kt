@@ -79,6 +79,12 @@ fun AppRoot() {
                     })
                 }
 
+                currentRoute == AppRoute.AllPlans.route -> {
+                    AllPlansScreen(onOpenPlan = { planId ->
+                        currentRoute = "${AppRoute.PlanResult.base}/$planId"
+                    })
+                }
+
                 currentRoute == AppRoute.LikedDestinations.route -> {
                     LikedDestinationsScreen(onOpenDestination = { id ->
                         currentRoute = "${AppRoute.Destination.base}/$id"

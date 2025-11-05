@@ -34,8 +34,9 @@ data class Plan(
 )
 
 data class User(
-    val email: String,
+    val username: String,
     val name: String,
-    val phone: String,
-    val location: String
+    val email: String,
+    val countryCode: String,
+    val phone: String
 )

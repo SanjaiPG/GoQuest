@@ -23,17 +23,22 @@ import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import com.runanywhere.startup_hackathon20.data.DI
+import androidx.compose.runtime.collectAsState
 
 @OptIn(ExperimentalMaterial3Api::class, ExperimentalLayoutApi::class)
 @Composable
 fun PlanResultScreen(planId: String) {
-    val plan = remember { DI.repo.getPlan(planId) }
+    val repo = remember { DI.repo }
+    val plan = remember { repo.getPlan(planId) }
     val destination = remember {
-    plan?.let { DI.repo.getDestination(it.destinationId) }
+        plan?.let { repo.getDestination(it.destinationId) }
     }
     val scrollState = rememberScrollState()
     var showExportDialog by remember { mutableStateOf(false) }
-    var isSaved by remember { mutableStateOf(false) }
+
+    // Use reactive state from repository
+    val likedPlans by repo.likedPlans.collectAsState()
+    val isSaved = likedPlans.contains(planId)
 
     if (plan == null) {
         Box(Modifier.fillMaxSize(), contentAlignment = Alignment.Center) {
@@ -522,10 +527,11 @@ fun PlanResultScreen(planId: String) {
 
                 OutlinedButton(
                     onClick = {
-                        if (!isSaved) {
-                            DI.repo.likePlan(planId)
+                        if (isSaved) {
+                            repo.unlikePlan(planId)
+                        } else {
+                            repo.likePlan(planId)
                         }
-                        isSaved = !isSaved
                     },
                     modifier = Modifier
                         .weight(1f)

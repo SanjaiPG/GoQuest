@@ -6,11 +6,10 @@ import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.material.icons.Icons
-import androidx.compose.material.icons.filled.Email
-import androidx.compose.material.icons.filled.Lock
 import androidx.compose.material.icons.filled.Person
+import androidx.compose.material.icons.filled.Lock
 import androidx.compose.material.icons.filled.Phone
-import androidx.compose.material.icons.filled.Place
+import androidx.compose.material.icons.filled.ArrowDropDown
 import androidx.compose.material3.*
 import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
@@ -22,19 +21,47 @@ import androidx.compose.ui.text.input.VisualTransformation
 import androidx.compose.ui.unit.dp
 import com.runanywhere.startup_hackathon20.data.DI
 
+// Common country codes
+val countryCodes = listOf(
+    "+1" to "🇺🇸 USA/Canada",
+    "+44" to "🇬🇧 UK",
+    "+91" to "🇮🇳 India",
+    "+86" to "🇨🇳 China",
+    "+81" to "🇯🇵 Japan",
+    "+49" to "🇩🇪 Germany",
+    "+33" to "🇫🇷 France",
+    "+39" to "🇮🇹 Italy",
+    "+34" to "🇪🇸 Spain",
+    "+61" to "🇦🇺 Australia",
+    "+971" to "🇦🇪 UAE",
+    "+65" to "🇸🇬 Singapore",
+    "+60" to "🇲🇾 Malaysia",
+    "+62" to "🇮🇩 Indonesia",
+    "+66" to "🇹🇭 Thailand",
+    "+82" to "🇰🇷 South Korea",
+    "+7" to "🇷🇺 Russia",
+    "+55" to "🇧🇷 Brazil",
+    "+52" to "🇲🇽 Mexico",
+    "+27" to "🇿🇦 South Africa"
+)
+
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
 fun LoginScreen(onLoginSuccess: () -> Unit) {
     val repo = remember { DI.repo }
-    var email by remember { mutableStateOf("") }
+    var username by remember { mutableStateOf("") }
     var password by remember { mutableStateOf("") }
     var name by remember { mutableStateOf("") }
+    var email by remember { mutableStateOf("") }
     var phone by remember { mutableStateOf("") }
-    var location by remember { mutableStateOf("") }
     var passwordVisible by remember { mutableStateOf(false) }
     var isRegisterMode by remember { mutableStateOf(false) }
     var errorMessage by remember { mutableStateOf("") }
     val scrollState = rememberScrollState()
+
+    // Country code selection
+    var selectedCountryCode by remember { mutableStateOf("+91") }
+    var expandedCountryCode by remember { mutableStateOf(false) }
 
     Box(
         modifier = Modifier
@@ -117,14 +144,14 @@ fun LoginScreen(onLoginSuccess: () -> Unit) {
                         Spacer(Modifier.height(16.dp))
                     }
 
-                    // Email Field
+                    // Username Field (for both login and register)
                     OutlinedTextField(
-                        value = email,
-                        onValueChange = { email = it },
-                        label = { Text("Email") },
-                        placeholder = { Text("your@email.com") },
+                        value = username,
+                        onValueChange = { username = it.lowercase().trim() },
+                        label = { Text("Username") },
+                        placeholder = { Text("johndoe") },
                         leadingIcon = {
-                            Icon(Icons.Filled.Email, contentDescription = null)
+                            Icon(Icons.Filled.Person, contentDescription = null)
                         },
                         modifier = Modifier.fillMaxWidth(),
                         shape = RoundedCornerShape(16.dp),
@@ -136,6 +163,27 @@ fun LoginScreen(onLoginSuccess: () -> Unit) {
                     )
 
                     Spacer(Modifier.height(16.dp))
+
+                    // Email Field (only for registration)
+                    if (isRegisterMode) {
+                        OutlinedTextField(
+                            value = email,
+                            onValueChange = { email = it.trim() },
+                            label = { Text("Email") },
+                            placeholder = { Text("john@example.com") },
+                            leadingIcon = {
+                                Icon(Icons.Filled.Person, contentDescription = null)
+                            },
+                            modifier = Modifier.fillMaxWidth(),
+                            shape = RoundedCornerShape(16.dp),
+                            singleLine = true,
+                            colors = OutlinedTextFieldDefaults.colors(
+                                focusedBorderColor = MaterialTheme.colorScheme.primary,
+                                unfocusedBorderColor = MaterialTheme.colorScheme.outline
+                            )
+                        )
+                        Spacer(Modifier.height(16.dp))
+                    }
 
                     // Password Field
                     OutlinedTextField(
@@ -164,45 +212,73 @@ fun LoginScreen(onLoginSuccess: () -> Unit) {
                         )
                     )
 
-                    // Registration fields continued
+                    // Phone number with country code (registration only)
                     if (isRegisterMode) {
                         Spacer(Modifier.height(16.dp))
 
-                        OutlinedTextField(
-                            value = phone,
-                            onValueChange = { phone = it },
-                            label = { Text("Phone Number") },
-                            placeholder = { Text("+1 234 567 8900") },
-                            leadingIcon = {
-                                Icon(Icons.Filled.Phone, contentDescription = null)
-                            },
+                        Row(
                             modifier = Modifier.fillMaxWidth(),
-                            shape = RoundedCornerShape(16.dp),
-                            singleLine = true,
-                            colors = OutlinedTextFieldDefaults.colors(
-                                focusedBorderColor = MaterialTheme.colorScheme.primary,
-                                unfocusedBorderColor = MaterialTheme.colorScheme.outline
-                            )
-                        )
+                            horizontalArrangement = Arrangement.spacedBy(12.dp)
+                        ) {
+                            // Country Code Dropdown
+                            ExposedDropdownMenuBox(
+                                expanded = expandedCountryCode,
+                                onExpandedChange = { expandedCountryCode = !expandedCountryCode },
+                                modifier = Modifier.weight(0.35f)
+                            ) {
+                                OutlinedTextField(
+                                    value = selectedCountryCode,
+                                    onValueChange = {},
+                                    readOnly = true,
+                                    trailingIcon = {
+                                        Icon(
+                                            Icons.Filled.ArrowDropDown,
+                                            contentDescription = null
+                                        )
+                                    },
+                                    modifier = Modifier.menuAnchor(),
+                                    shape = RoundedCornerShape(16.dp),
+                                    singleLine = true,
+                                    colors = OutlinedTextFieldDefaults.colors(
+                                        focusedBorderColor = MaterialTheme.colorScheme.primary,
+                                        unfocusedBorderColor = MaterialTheme.colorScheme.outline
+                                    )
+                                )
 
-                        Spacer(Modifier.height(16.dp))
+                                ExposedDropdownMenu(
+                                    expanded = expandedCountryCode,
+                                    onDismissRequest = { expandedCountryCode = false }
+                                ) {
+                                    countryCodes.forEach { (code, label) ->
+                                        DropdownMenuItem(
+                                            text = { Text("$code $label") },
+                                            onClick = {
+                                                selectedCountryCode = code
+                                                expandedCountryCode = false
+                                            }
+                                        )
+                                    }
+                                }
+                            }
 
-                        OutlinedTextField(
-                            value = location,
-                            onValueChange = { location = it },
-                            label = { Text("Location") },
-                            placeholder = { Text("New York, USA") },
-                            leadingIcon = {
-                                Icon(Icons.Filled.Place, contentDescription = null)
-                            },
-                            modifier = Modifier.fillMaxWidth(),
-                            shape = RoundedCornerShape(16.dp),
-                            singleLine = true,
-                            colors = OutlinedTextFieldDefaults.colors(
-                                focusedBorderColor = MaterialTheme.colorScheme.primary,
-                                unfocusedBorderColor = MaterialTheme.colorScheme.outline
+                            // Phone Number Field
+                            OutlinedTextField(
+                                value = phone,
+                                onValueChange = { phone = it.filter { char -> char.isDigit() } },
+                                label = { Text("Phone Number") },
+                                placeholder = { Text("1234567890") },
+                                leadingIcon = {
+                                    Icon(Icons.Filled.Phone, contentDescription = null)
+                                },
+                                modifier = Modifier.weight(0.65f),
+                                shape = RoundedCornerShape(16.dp),
+                                singleLine = true,
+                                colors = OutlinedTextFieldDefaults.colors(
+                                    focusedBorderColor = MaterialTheme.colorScheme.primary,
+                                    unfocusedBorderColor = MaterialTheme.colorScheme.outline
+                                )
                             )
-                        )
+                        }
                     }
 
                     // Error message
@@ -222,22 +298,65 @@ fun LoginScreen(onLoginSuccess: () -> Unit) {
                         onClick = {
                             errorMessage = ""
                             if (isRegisterMode) {
-                                if (email.isBlank() || password.isBlank() || name.isBlank()) {
-                                    errorMessage = "Please fill all required fields"
-                                } else {
-                                    val success = repo.registerUser(email, name, phone, location)
-                                    if (success) {
-                                        onLoginSuccess()
-                                    } else {
-                                        errorMessage = "Email already registered. Please login."
+                                // Validation for registration
+                                when {
+                                    username.isBlank() || password.isBlank() || name.isBlank() || email.isBlank() -> {
+                                        errorMessage = "Please fill all required fields"
+                                    }
+                                    username.length < 3 -> {
+                                        errorMessage = "Username must be at least 3 characters"
+                                    }
+
+                                    username.contains(" ") -> {
+                                        errorMessage = "Username cannot contain spaces"
+                                    }
+
+                                    !email.contains("@") || !email.contains(".") -> {
+                                        errorMessage = "Please enter a valid email address"
+                                    }
+
+                                    password.length < 6 -> {
+                                        errorMessage = "Password must be at least 6 characters"
+                                    }
+
+                                    phone.isNotBlank() && phone.length < 10 -> {
+                                        errorMessage = "Please enter a valid phone number"
+                                    }
+
+                                    else -> {
+                                        val success = repo.registerUser(
+                                            username = username,
+                                            password = password,
+                                            name = name,
+                                            email = email,
+                                            countryCode = selectedCountryCode,
+                                            phone = phone
+                                        )
+                                        if (success) {
+                                            // Registration successful, now switch to login mode
+                                            isRegisterMode = false
+                                            password = "" // Clear password for security
+                                            errorMessage = ""
+                                            // Show success message
+                                            errorMessage =
+                                                "✅ Registration successful! Please login."
+                                        } else {
+                                            errorMessage =
+                                                "Username '$username' is already taken. Please choose another."
+                                        }
                                     }
                                 }
                             } else {
-                                if (email.isBlank() || password.isBlank()) {
-                                    errorMessage = "Please enter email and password"
+                                // Validation for login
+                                if (username.isBlank() || password.isBlank()) {
+                                    errorMessage = "Please enter username and password"
                                 } else {
-                                    repo.loginUser(email, password)
-                                    onLoginSuccess()
+                                    val success = repo.loginUser(username, password)
+                                    if (success) {
+                                        onLoginSuccess()
+                                    } else {
+                                        errorMessage = "Invalid username or password"
+                                    }
                                 }
                             }
                         },

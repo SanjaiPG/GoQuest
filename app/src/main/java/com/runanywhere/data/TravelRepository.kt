@@ -1,6 +1,9 @@
 package com.runanywhere.startup_hackathon20.data
 
 import com.runanywhere.startup_hackathon20.data.model.*
+import kotlinx.coroutines.flow.MutableStateFlow
+import kotlinx.coroutines.flow.StateFlow
+import kotlinx.coroutines.flow.asStateFlow
 
 class TravelRepository {
     private val destinations = listOf(
@@ -287,55 +290,101 @@ class TravelRepository {
         ),
     )
 
-    private val likedDestinations = mutableSetOf<String>()
-    private val plans = mutableMapOf<String, Plan>()
-    private val likedPlans = mutableSetOf<String>()
+    // Use StateFlow for reactive updates
+    private val _likedDestinations = MutableStateFlow<Set<String>>(emptySet())
+    val likedDestinations: StateFlow<Set<String>> = _likedDestinations.asStateFlow()
 
-    // User management
+    private val _likedPlans = MutableStateFlow<Set<String>>(emptySet())
+    val likedPlans: StateFlow<Set<String>> = _likedPlans.asStateFlow()
+
+    private val plans = mutableMapOf<String, Plan>()
+    private val _plansVersion = MutableStateFlow(0) // Trigger for plan changes
+    val plansVersion: StateFlow<Int> = _plansVersion.asStateFlow()
+
+    // User management with password
     private var currentUser: User? = null
-    private val registeredUsers = mutableMapOf<String, User>()  // email -> User
+    private val registeredUsers =
+        mutableMapOf<String, Pair<User, String>>()  // username -> (User, password)
 
     fun getPopularDestinations(): List<Destination> = destinations
     fun getDestination(id: String): Destination? = destinations.find { it.id == id }
 
-    fun likeDestination(id: String) { likedDestinations += id }
-    fun getLikedDestinations(): List<Destination> = likedDestinations.mapNotNull { getDestination(it) }
+    fun likeDestination(id: String) {
+        _likedDestinations.value = _likedDestinations.value + id
+    }
 
-    fun savePlan(plan: Plan) { plans[plan.id] = plan }
+    fun unlikeDestination(id: String) {
+        _likedDestinations.value = _likedDestinations.value - id
+    }
+
+    fun isDestinationLiked(id: String): Boolean = _likedDestinations.value.contains(id)
+
+    fun getLikedDestinations(): List<Destination> =
+        _likedDestinations.value.mapNotNull { getDestination(it) }
+
+    fun savePlan(plan: Plan) {
+        plans[plan.id] = plan
+        _plansVersion.value += 1 // Increment version to trigger updates
+    }
     fun getPlan(planId: String): Plan? = plans[planId]
-    fun likePlan(planId: String) { likedPlans += planId }
-    fun getLikedPlans(): List<Plan> = likedPlans.mapNotNull { plans[it] }
+    fun getAllPlans(): List<Plan> = plans.values.toList()
 
-    // User functions
-    fun registerUser(email: String, name: String, phone: String, location: String): Boolean {
-        if (registeredUsers.containsKey(email)) {
-            return false // User already exists
+    fun likePlan(planId: String) {
+        _likedPlans.value = _likedPlans.value + planId
+    }
+
+    fun unlikePlan(planId: String) {
+        _likedPlans.value = _likedPlans.value - planId
+    }
+
+    fun isPlanLiked(planId: String): Boolean = _likedPlans.value.contains(planId)
+
+    fun getLikedPlans(): List<Plan> =
+        _likedPlans.value.mapNotNull { plans[it] }
+
+    // User functions with password
+    fun registerUser(
+        username: String,
+        password: String,
+        name: String,
+        email: String,
+        countryCode: String,
+        phone: String
+    ): Boolean {
+        // Check if username already exists
+        if (registeredUsers.containsKey(username)) {
+            return false // Username already taken
         }
-        val user = User(email, name, phone, location)
-        registeredUsers[email] = user
+        val user = User(username, name, email, countryCode, phone)
+        registeredUsers[username] = Pair(user, password)
         currentUser = user
         return true
     }
 
-    fun loginUser(email: String, password: String): Boolean {
-        // Simple login - in real app, verify password
-        val user = registeredUsers[email]
-        if (user != null) {
-            currentUser = user
+    fun loginUser(username: String, password: String): Boolean {
+        val userPair = registeredUsers[username]
+        if (userPair != null && userPair.second == password) {
+            currentUser = userPair.first
             return true
         }
-        // For demo, allow any login and create user
-        val newUser = User(email, "User", "", "")
-        registeredUsers[email] = newUser
-        currentUser = newUser
-        return true
+        return false
     }
 
     fun getCurrentUser(): User? = currentUser
 
     fun updateUser(user: User) {
         currentUser = user
-        registeredUsers[user.email] = user
+        val existingPassword = registeredUsers[user.username]?.second ?: ""
+        registeredUsers[user.username] = Pair(user, existingPassword)
+    }
+
+    fun updatePassword(username: String, oldPassword: String, newPassword: String): Boolean {
+        val userPair = registeredUsers[username]
+        if (userPair != null && userPair.second == oldPassword) {
+            registeredUsers[username] = Pair(userPair.first, newPassword)
+            return true
+        }
+        return false
     }
 
     fun isLoggedIn(): Boolean = currentUser != null

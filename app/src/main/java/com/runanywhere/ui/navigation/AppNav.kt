@@ -15,6 +15,7 @@ sealed class AppRoute(val route: String) {
     data object Home: AppRoute("home")
     data object Map : AppRoute("map")
     data object Profile : AppRoute("profile")
+    data object AllPlans : AppRoute("all_plans")
     data object LikedPlans: AppRoute("liked_plans")
     data object LikedDestinations: AppRoute("liked_destinations")
     data object Chat: AppRoute("chat")
@@ -30,6 +31,6 @@ data class BottomItem(val route: String, val label: String, val icon: ImageVecto
 val bottomItems = listOf(
     BottomItem(AppRoute.Home.route, "Home", Icons.Filled.Home),
     BottomItem(AppRoute.LikedDestinations.route, "Wishlist", Icons.Filled.Favorite),
-    BottomItem(AppRoute.LikedPlans.route, "Cart", Icons.Filled.ShoppingCart),
+    BottomItem(AppRoute.AllPlans.route, "Plans", Icons.Filled.List),
     BottomItem(AppRoute.Chat.route, "Chatbot", Icons.Filled.Info),
 )
