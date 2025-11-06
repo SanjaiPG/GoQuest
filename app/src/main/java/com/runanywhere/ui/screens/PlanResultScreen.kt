@@ -30,13 +30,17 @@ import com.google.maps.android.compose.*
 
 @OptIn(ExperimentalMaterial3Api::class, ExperimentalLayoutApi::class)
 @Composable
-fun PlanResultScreen(planId: String) {
+fun PlanResultScreen(
+    planId: String,
+    onNavigateToEditPlan: ((String) -> Unit)? = null
+) {
     val repo = remember { DI.repo }
     val plan = remember { repo.getPlan(planId) }
     val destination = remember {
         plan?.let { repo.getDestination(it.destinationId) }
     }
     val scrollState = rememberScrollState()
+    var showConfirmationDialog by remember { mutableStateOf(false) }
     var showExportDialog by remember { mutableStateOf(false) }
 
     // Use reactive state from repository
@@ -63,7 +67,65 @@ fun PlanResultScreen(planId: String) {
         return
     }
 
-    // Export Dialog
+    // Confirmation Dialog - Shows first before export
+    if (showConfirmationDialog) {
+        AlertDialog(
+            onDismissRequest = { showConfirmationDialog = false },
+            icon = {
+                Text("✅", style = MaterialTheme.typography.displaySmall)
+            },
+            title = {
+                Text(
+                    "Confirm Your Plan",
+                    style = MaterialTheme.typography.headlineSmall,
+                    fontWeight = FontWeight.Bold
+                )
+            },
+            text = {
+                Column {
+                    Text(
+                        "Is this information correct?",
+                        style = MaterialTheme.typography.bodyLarge,
+                        modifier = Modifier.padding(bottom = 8.dp)
+                    )
+                    Text(
+                        "Review your travel plan details before exporting.",
+                        style = MaterialTheme.typography.bodyMedium,
+                        color = Color(0xFF6B7280)
+                    )
+                }
+            },
+            confirmButton = {
+                Button(
+                    onClick = {
+                        showConfirmationDialog = false
+                        showExportDialog = true
+                    },
+                    colors = ButtonDefaults.buttonColors(
+                        containerColor = Color(0xFF10B981)
+                    )
+                ) {
+                    Text("Yes, Export")
+                }
+            },
+            dismissButton = {
+                OutlinedButton(
+                    onClick = {
+                        showConfirmationDialog = false
+                        // Navigate back to form with pre-filled data
+                        onNavigateToEditPlan?.invoke(planId)
+                    },
+                    colors = ButtonDefaults.outlinedButtonColors(
+                        contentColor = Color(0xFFEF4444)
+                    )
+                ) {
+                    Text("No, Edit Plan")
+                }
+            }
+        )
+    }
+
+    // Export Dialog - Only shows after confirmation "Yes"
     if (showExportDialog) {
         AlertDialog(
             onDismissRequest = { showExportDialog = false },
@@ -533,7 +595,7 @@ fun PlanResultScreen(planId: String) {
 
             // Action Buttons
             Button(
-                onClick = { showExportDialog = true },
+                onClick = { showConfirmationDialog = true },
                 modifier = Modifier
                     .fillMaxWidth()
                     .height(56.dp),

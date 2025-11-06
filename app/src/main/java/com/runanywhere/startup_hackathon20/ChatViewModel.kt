@@ -421,4 +421,9 @@ class ChatViewModel : ViewModel() {
             }
         }
     }
+
+    // Add system/AI greeting message
+    fun addSystemMessage(text: String) {
+        _messages.value += ChatMessage(text, isUser = false)
+    }
 }

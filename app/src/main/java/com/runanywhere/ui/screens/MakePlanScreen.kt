@@ -39,6 +39,7 @@ import androidx.compose.ui.draw.clip
 @Composable
 fun MakePlanScreen(
     destinationId: String? = null,
+    planIdToEdit: String? = null,
     onPlanCreated: (String) -> Unit,
     onBack: (() -> Unit)? = null,
     vm: ChatViewModel = viewModel()
@@ -47,6 +48,9 @@ fun MakePlanScreen(
     val destination = remember(destinationId) {
         destinationId?.let { repo.getDestination(it) }
     }
+
+    // Check if we're in edit mode
+    val isEditMode = planIdToEdit != null
 
     var from by remember { mutableStateOf("") }
     var to by remember(destination) { mutableStateOf(destination?.name ?: "Paris") }
@@ -122,13 +126,13 @@ fun MakePlanScreen(
 
                     Column(modifier = Modifier.weight(1f)) {
                         Text(
-                            "Plan Your Trip",
+                            if (isEditMode) "Create New Plan" else "Plan Your Trip",
                             style = MaterialTheme.typography.headlineLarge,
                             fontWeight = FontWeight.Bold,
                             color = Color.White
                         )
                         Text(
-                            "Let AI create a perfect itinerary for you",
+                            if (isEditMode) "Enter correct details for your trip" else "Let AI create a perfect itinerary for you",
                             style = MaterialTheme.typography.bodyLarge,
                             color = Color.White.copy(alpha = 0.9f)
                         )
@@ -143,6 +147,38 @@ fun MakePlanScreen(
                 .padding(24.dp),
             verticalArrangement = Arrangement.spacedBy(16.dp)
         ) {
+            // Show edit mode banner if editing
+            if (isEditMode) {
+                Card(
+                    modifier = Modifier.fillMaxWidth(),
+                    colors = CardDefaults.cardColors(
+                        containerColor = Color(0xFFFEF3C7)
+                    ),
+                    shape = RoundedCornerShape(12.dp)
+                ) {
+                    Row(
+                        modifier = Modifier.padding(16.dp),
+                        verticalAlignment = Alignment.CenterVertically,
+                        horizontalArrangement = Arrangement.spacedBy(12.dp)
+                    ) {
+                        Text("✏️", fontSize = 24.sp)
+                        Column {
+                            Text(
+                                "Make Corrections",
+                                style = MaterialTheme.typography.titleMedium,
+                                fontWeight = FontWeight.Bold,
+                                color = Color(0xFF92400E)
+                            )
+                            Text(
+                                "Fill in the correct details and generate a new plan",
+                                style = MaterialTheme.typography.bodySmall,
+                                color = Color(0xFF92400E).copy(alpha = 0.8f)
+                            )
+                        }
+                    }
+                }
+            }
+
             // Journey Section
             Text(
                 "Journey Details",

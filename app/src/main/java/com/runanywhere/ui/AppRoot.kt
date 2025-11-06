@@ -23,6 +23,9 @@ fun AppRoot() {
     // Track selected destination for plan creation
     var selectedDestinationId by remember { mutableStateOf<String?>(null) }
 
+    // Track plan ID for editing
+    var planIdToEdit by remember { mutableStateOf<String?>(null) }
+
     // If not logged in, show login screen
     if (!isLoggedIn) {
         LoginScreen(onLoginSuccess = { isLoggedIn = true })
@@ -115,7 +118,15 @@ fun AppRoot() {
                 }
 
                 currentRoute == AppRoute.Chat.route -> {
-                    ChatTab()
+                    ChatTab(
+                        onNavigateToMakePlan = {
+                            previousRoute = currentRoute
+                            currentRoute = AppRoute.MakePlan.route
+                        },
+                        onNavigateToHome = {
+                            currentRoute = AppRoute.Home.route
+                        }
+                    )
                 }
 
                 currentRoute.startsWith("${AppRoute.Destination.base}/") -> {
@@ -130,11 +141,14 @@ fun AppRoot() {
                 currentRoute == AppRoute.MakePlan.route -> {
                     MakePlanScreen(
                         destinationId = selectedDestinationId,
+                        planIdToEdit = planIdToEdit,
                         onPlanCreated = { planId ->
+                            planIdToEdit = null // Clear edit mode
                             currentRoute = "${AppRoute.PlanResult.base}/$planId"
                         },
                         onBack = if (previousRoute != null) {
                             {
+                                planIdToEdit = null // Clear edit mode on back
                                 currentRoute = previousRoute!!
                                 previousRoute = null
                             }
@@ -144,7 +158,14 @@ fun AppRoot() {
 
                 currentRoute.startsWith("${AppRoute.PlanResult.base}/") -> {
                     val planId = currentRoute.substringAfter("${AppRoute.PlanResult.base}/")
-                    PlanResultScreen(planId = planId)
+                    PlanResultScreen(
+                        planId = planId,
+                        onNavigateToEditPlan = { editPlanId ->
+                            planIdToEdit = editPlanId
+                            previousRoute = currentRoute
+                            currentRoute = AppRoute.MakePlan.route
+                        }
+                    )
                 }
             }
         }
@@ -152,6 +173,14 @@ fun AppRoot() {
 }
 
 @Composable
-private fun ChatTab(viewModel: ChatViewModel = androidx.lifecycle.viewmodel.compose.viewModel()) {
-    com.runanywhere.startup_hackathon20.ChatScreen(viewModel)
+private fun ChatTab(
+    viewModel: ChatViewModel = androidx.lifecycle.viewmodel.compose.viewModel(),
+    onNavigateToMakePlan: () -> Unit = {},
+    onNavigateToHome: () -> Unit = {}
+) {
+    com.runanywhere.startup_hackathon20.ChatScreen(
+        viewModel = viewModel,
+        onNavigateToMakePlan = onNavigateToMakePlan,
+        onNavigateToHome = onNavigateToHome
+    )
 }
