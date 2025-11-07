@@ -1,3 +1,6 @@
 <resources>
     <string name="app_name">startup_hackathon2.0</string>
+
+    <!-- Get this from Firebase Console → Project Settings → Web Client ID -->
+    <string name="default_web_client_id">YOUR_WEB_CLIENT_ID_HERE</string>
 </resources>

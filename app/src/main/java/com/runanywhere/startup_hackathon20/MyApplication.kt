@@ -1,5 +1,7 @@
 package com.runanywhere.startup_hackathon20
 
+import com.runanywhere.startup_hackathon20.data.firebase.FirebaseAuthManager
+
 import android.app.Application
 import android.util.Log
 import com.runanywhere.sdk.public.RunAnywhere
@@ -11,9 +13,15 @@ import kotlinx.coroutines.GlobalScope
 import kotlinx.coroutines.launch
 
 class MyApplication : Application() {
+    // 2. ADD A COMPANION OBJECT
+    companion object {
+        lateinit var authManager: FirebaseAuthManager
+            private set
+    }
 
     override fun onCreate() {
         super.onCreate()
+        authManager = FirebaseAuthManager(applicationContext)
 
         Log.i("MyApp", "Application onCreate - Starting SDK initialization")
 

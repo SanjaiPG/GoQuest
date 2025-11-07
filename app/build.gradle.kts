@@ -2,6 +2,7 @@ plugins {
     alias(libs.plugins.android.application)
     alias(libs.plugins.kotlin.android)
     alias(libs.plugins.kotlin.compose)
+    id("com.google.gms.google-services")
 }
 
 android {
@@ -15,6 +16,10 @@ android {
         versionCode = 1
         versionName = "1.0"
 
+
+        buildConfigField("String", "GOOGLE_MAPS_API_KEY", "\"YOUR_GOOGLE_MAPS_API_KEY\"")
+        buildConfigField("String", "UNSPLASH_ACCESS_KEY", "\"YOUR_UNSPLASH_ACCESS_KEY\"")
+        manifestPlaceholders["MAPS_API_KEY"] = "YOUR_GOOGLE_MAPS_API_KEY"
         testInstrumentationRunner = "androidx.test.runner.AndroidJUnitRunner"
     }
 
@@ -36,16 +41,39 @@ android {
     }
     buildFeatures {
         compose = true
+        buildConfig = true
     }
 }
 
 dependencies {
+    // Firebase BoM (Bill of Materials)
+    implementation(platform("com.google.firebase:firebase-bom:32.7.0"))
+
+    // ... your other firebase libraries like firebase-auth-ktx
+    implementation("com.google.firebase:firebase-firestore-ktx")
+
+    // Firebase Authentication
+    implementation("com.google.firebase:firebase-auth-ktx")
+
+    // Google Sign-In
+    implementation("com.google.android.gms:play-services-auth:20.7.0")
+
+    // Cloud Firestore
+    implementation("com.google.firebase:firebase-firestore-ktx")
+
+    // Firebase Storage (optional - for profile pictures)
+    implementation("com.google.firebase:firebase-storage-ktx")
+
+    // Coroutines support for Firebase
+    implementation("org.jetbrains.kotlinx:kotlinx-coroutines-play-services:1.7.3")
+
     // RunAnywhere SDK - Local AARs from GitHub Release v0.1.3-alpha
     // Core SDK (4.01MB)
     implementation(files("libs/RunAnywhereKotlinSDK-release.aar"))
     // LLM Module (2.12MB) - includes llama.cpp with 7 ARM64 CPU variants
     implementation(files("libs/runanywhere-llm-llamacpp-release.aar"))
-
+    // Coil for image loading
+    implementation("io.coil-kt:coil-compose:2.5.0")
     // Required SDK dependencies (transitive dependencies from AARs)
     implementation("org.jetbrains.kotlinx:kotlinx-coroutines-core:1.10.2")
     implementation("org.jetbrains.kotlinx:kotlinx-coroutines-android:1.10.2")

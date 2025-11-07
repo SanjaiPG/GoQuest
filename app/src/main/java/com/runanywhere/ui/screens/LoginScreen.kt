@@ -1,5 +1,10 @@
 package com.runanywhere.startup_hackathon20.ui.screens
 
+// 1. IMPORTS MOVED TO THE CORRECT LOCATION
+import androidx.compose.runtime.rememberCoroutineScope
+import com.runanywhere.startup_hackathon20.MyApplication
+import kotlinx.coroutines.launch
+
 import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.*
@@ -15,6 +20,7 @@ import androidx.compose.material.icons.filled.Phone
 import androidx.compose.material.icons.filled.ArrowDropDown
 import androidx.compose.material.icons.filled.Search
 import androidx.compose.material.icons.filled.Close
+import androidx.compose.material.icons.filled.Email // <-- IMPORT EMAIL ICON
 import androidx.compose.material3.*
 import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
@@ -25,7 +31,7 @@ import androidx.compose.ui.text.input.PasswordVisualTransformation
 import androidx.compose.ui.text.input.VisualTransformation
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.window.Dialog
-import com.runanywhere.startup_hackathon20.data.DI
+// import com.runanywhere.startup_hackathon20.data.DI // <-- 2. REMOVED OLD REPO IMPORT
 
 // Common country codes
 val countryCodes = listOf(
@@ -54,11 +60,17 @@ val countryCodes = listOf(
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
 fun LoginScreen(onLoginSuccess: () -> Unit) {
-    val repo = remember { DI.repo }
-    var username by remember { mutableStateOf("") }
+
+    // 3. SET UP FIREBASE AUTH AND COROUTINE SCOPE
+    val authManager = MyApplication.authManager
+    val scope = rememberCoroutineScope()
+
+    // val repo = remember { DI.repo } // <-- 4. REMOVED OLD REPO
+
+    // var username by remember { mutableStateOf("") } // <-- Replaced with email
     var password by remember { mutableStateOf("") }
     var name by remember { mutableStateOf("") }
-    var email by remember { mutableStateOf("") }
+    var email by remember { mutableStateOf("") } // <-- This is now the main field for login
     var phone by remember { mutableStateOf("") }
     var passwordVisible by remember { mutableStateOf(false) }
     var isRegisterMode by remember { mutableStateOf(false) }
@@ -88,7 +100,7 @@ fun LoginScreen(onLoginSuccess: () -> Unit) {
             horizontalAlignment = Alignment.CenterHorizontally,
             verticalArrangement = Arrangement.Center
         ) {
-            // App Logo/Title
+            // ... (App Logo/Title is unchanged) ...
             Text(
                 "✈️",
                 style = MaterialTheme.typography.displayLarge
@@ -149,14 +161,14 @@ fun LoginScreen(onLoginSuccess: () -> Unit) {
                         Spacer(Modifier.height(16.dp))
                     }
 
-                    // Username Field (for both login and register)
+                    // 5. CHANGED USERNAME FIELD TO EMAIL
                     OutlinedTextField(
-                        value = username,
-                        onValueChange = { username = it.lowercase().trim() },
-                        label = { Text("Username") },
-                        placeholder = { Text("johndoe") },
+                        value = email,
+                        onValueChange = { email = it.trim() },
+                        label = { Text("Email") },
+                        placeholder = { Text("john@example.com") },
                         leadingIcon = {
-                            Icon(Icons.Filled.Person, contentDescription = null)
+                            Icon(Icons.Filled.Email, contentDescription = null)
                         },
                         modifier = Modifier.fillMaxWidth(),
                         shape = RoundedCornerShape(16.dp),
@@ -169,26 +181,7 @@ fun LoginScreen(onLoginSuccess: () -> Unit) {
 
                     Spacer(Modifier.height(16.dp))
 
-                    // Email Field (only for registration)
-                    if (isRegisterMode) {
-                        OutlinedTextField(
-                            value = email,
-                            onValueChange = { email = it.trim() },
-                            label = { Text("Email") },
-                            placeholder = { Text("john@example.com") },
-                            leadingIcon = {
-                                Icon(Icons.Filled.Person, contentDescription = null)
-                            },
-                            modifier = Modifier.fillMaxWidth(),
-                            shape = RoundedCornerShape(16.dp),
-                            singleLine = true,
-                            colors = OutlinedTextFieldDefaults.colors(
-                                focusedBorderColor = MaterialTheme.colorScheme.primary,
-                                unfocusedBorderColor = MaterialTheme.colorScheme.outline
-                            )
-                        )
-                        Spacer(Modifier.height(16.dp))
-                    }
+                    // 6. REMOVED THE REDUNDANT/SECOND EMAIL FIELD THAT WAS HERE
 
                     // Password Field
                     OutlinedTextField(
@@ -217,7 +210,7 @@ fun LoginScreen(onLoginSuccess: () -> Unit) {
                         )
                     )
 
-                    // Phone number with country code (registration only)
+                    // ... (Phone number and country dialogs are unchanged) ...
                     if (isRegisterMode) {
                         Spacer(Modifier.height(16.dp))
 
@@ -256,7 +249,7 @@ fun LoginScreen(onLoginSuccess: () -> Unit) {
                                 val filtered = newValue.filter { it.isDigit() }.take(15)
                                 phone = filtered
                             },
-                            label = { Text("Phone") },
+                            label = { Text("Phone (Optional)") },
                             placeholder = { Text("Phone") },
                             leadingIcon = {
                                 Icon(
@@ -387,66 +380,57 @@ fun LoginScreen(onLoginSuccess: () -> Unit) {
                         onClick = {
                             errorMessage = ""
                             if (isRegisterMode) {
-                                // Validation for registration
+                                // 7. --- NEW FIREBASE REGISTER LOGIC ---
                                 when {
-                                    username.isBlank() || password.isBlank() || name.isBlank() || email.isBlank() -> {
-                                        errorMessage = "Please fill all required fields"
+                                    email.isBlank() || password.isBlank() || name.isBlank() -> {
+                                        errorMessage = "Please fill name, email, and password"
                                     }
-                                    username.length < 3 -> {
-                                        errorMessage = "Username must be at least 3 characters"
-                                    }
-
-                                    username.contains(" ") -> {
-                                        errorMessage = "Username cannot contain spaces"
-                                    }
-
                                     !email.contains("@") || !email.contains(".") -> {
                                         errorMessage = "Please enter a valid email address"
                                     }
-
                                     password.length < 6 -> {
                                         errorMessage = "Password must be at least 6 characters"
                                     }
-
-                                    phone.isNotBlank() && phone.length > 15 -> {
-                                        errorMessage = "Phone number is too long"
-                                    }
-
                                     else -> {
-                                        val success = repo.registerUser(
-                                            username = username,
-                                            password = password,
-                                            name = name,
-                                            email = email,
-                                            countryCode = selectedCountryCode, // use selected country code
-                                            phone = phone
-                                        )
-                                        if (success) {
-                                            // Registration successful, now switch to login mode
-                                            isRegisterMode = false
-                                            password = "" // Clear password for security
-                                            errorMessage = ""
-                                            // Show success message
-                                            errorMessage =
-                                                "✅ Registration successful! Please login."
-                                        } else {
-                                            errorMessage =
-                                                "Username '$username' is already taken. Please choose another."
+                                        scope.launch {
+                                            val result = authManager.registerWithEmail(
+                                                email = email,
+                                                password = password,
+                                                name = name,
+                                                countryCode = selectedCountryCode,
+                                                phone = phone
+                                            )
+                                            if (result.isSuccess) {
+                                                isRegisterMode = false
+                                                password = "" // Clear password
+                                                errorMessage = "✅ Registration successful! Please login."
+                                            } else {
+                                                // Show the actual error from Firebase
+                                                errorMessage = result.exceptionOrNull()?.message
+                                                    ?: "Registration failed."
+                                            }
                                         }
                                     }
                                 }
+                                // --- END OF NEW LOGIC ---
+
                             } else {
-                                // Validation for login
-                                if (username.isBlank() || password.isBlank()) {
-                                    errorMessage = "Please enter username and password"
+                                // 8. --- NEW FIREBASE LOGIN LOGIC ---
+                                if (email.isBlank() || password.isBlank()) {
+                                    errorMessage = "Please enter email and password"
                                 } else {
-                                    val success = repo.loginUser(username, password)
-                                    if (success) {
-                                        onLoginSuccess()
-                                    } else {
-                                        errorMessage = "Invalid username or password"
+                                    scope.launch {
+                                        val result = authManager.signInWithEmail(email, password)
+                                        if (result.isSuccess) {
+                                            onLoginSuccess() // Navigate to home
+                                        } else {
+                                            // Show the actual error from Firebase
+                                            errorMessage = result.exceptionOrNull()?.message
+                                                ?: "Invalid email or password."
+                                        }
                                     }
                                 }
+                                // --- END OF NEW LOGIC ---
                             }
                         },
                         modifier = Modifier
