@@ -46,7 +46,7 @@ fun MakePlanScreen(
 ) {
     val repo = remember { com.runanywhere.startup_hackathon20.data.DI.repo }
     val destination = remember(destinationId) {
-        destinationId?.let { repo.getDestination(it) }
+        destinationId?.let { repo.getDestinationById(it) }
     }
 
     // Check if we're in edit mode

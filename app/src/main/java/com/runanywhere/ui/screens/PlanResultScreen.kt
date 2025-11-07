@@ -35,10 +35,17 @@ fun PlanResultScreen(
     onNavigateToEditPlan: ((String) -> Unit)? = null
 ) {
     val repo = remember { DI.repo }
-    val plan = remember { repo.getPlan(planId) }
-    val destination = remember {
-        plan?.let { repo.getDestination(it.destinationId) }
+
+    val plan = remember(planId) {
+        repo.getPlanById(planId)
     }
+
+    val destination = remember(plan) {
+        plan?.let { p ->
+            repo.getDestinationById(p.destinationId)
+        }
+    }
+
     val scrollState = rememberScrollState()
     var showConfirmationDialog by remember { mutableStateOf(false) }
     var showExportDialog by remember { mutableStateOf(false) }

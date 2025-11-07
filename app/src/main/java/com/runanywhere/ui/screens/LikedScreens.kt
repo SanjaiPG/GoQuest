@@ -25,13 +25,15 @@ import com.runanywhere.startup_hackathon20.data.DI
 @Composable
 fun AllPlansScreen(onOpenPlan: (String) -> Unit) {
     val repo = remember { DI.repo }
-    val likedPlanIds by repo.likedPlans.collectAsState()
+    val likedPlanIds = repo.likedPlans.collectAsState().value
     val plansVersion by repo.plansVersion.collectAsState()
 
-    // Derive all plans reactively - recompose when plansVersion changes (new plan created)
     val allPlans = remember(plansVersion) {
         repo.getAllPlans()
     }
+    val wishlistPlans = allPlans.filter { likedPlanIds.contains(it.id) }
+    // Derive all plans reactively - recompose when plansVersion changes (new plan created)
+
 
     Column(
         Modifier
@@ -253,7 +255,7 @@ fun LikedPlansScreen(onOpenPlan: (String) -> Unit) {
     val repo = remember { DI.repo }
     val likedPlans by repo.likedPlans.collectAsState()
     val plans = remember(likedPlans) {
-        repo.getLikedPlans()
+        repo.getAllPlans()
     }
 
     Column(
@@ -471,8 +473,9 @@ fun LikedDestinationsScreen(onOpenDestination: (String) -> Unit) {
     val repo = remember { DI.repo }
     val likedDestinations by repo.likedDestinations.collectAsState()
     val places = remember(likedDestinations) {
-        repo.getLikedDestinations()
+        repo.getPopularDestinations().filter { it.id in likedDestinations }
     }
+
 
     Column(Modifier
         .fillMaxSize()

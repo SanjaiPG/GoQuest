@@ -298,7 +298,7 @@ class ChatViewModel : ViewModel() {
                     markdownItinerary = aiItinerary,
                     destinationId = form.to
                 )
-                DI.repo.savePlan(plan)
+                DI.repo.addPlan(plan)
 
                 _statusMessage.value = "Plan generated successfully!"
                 onComplete(id)
@@ -389,7 +389,7 @@ class ChatViewModel : ViewModel() {
                     markdownItinerary = aiItinerary,
                     destinationId = form.to
                 )
-                DI.repo.savePlan(plan)
+                DI.repo.addPlan(plan)
 
                 val finalPlanData = PlanDisplayData(
                     from = form.from,

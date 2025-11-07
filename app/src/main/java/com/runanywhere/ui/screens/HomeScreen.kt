@@ -1,5 +1,7 @@
 package com.runanywhere.startup_hackathon20.ui.screens
 
+
+import com.runanywhere.startup_hackathon20.data.model.User
 import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.*
@@ -38,7 +40,6 @@ import com.runanywhere.startup_hackathon20.data.DI
 import androidx.compose.runtime.collectAsState
 import androidx.compose.ui.input.pointer.pointerInput
 import com.google.android.gms.maps.CameraUpdateFactory
-import kotlinx.coroutines.flow.StateFlow
 import com.google.android.gms.maps.model.CameraPosition
 import com.google.android.gms.maps.model.LatLng
 import com.google.maps.android.compose.*
@@ -60,10 +61,13 @@ fun HomeScreen(
     val likedDestinationsList = likedDestinations.toList()
     val likedPlans by repo.likedPlans.collectAsState()
     val plansVersion by repo.plansVersion.collectAsState()
+    val user by repo.currentUser.collectAsState()
+    val userName = user?.name ?: "Traveler"
 
-    // Get current user for greeting
-    val currentUser = remember { repo.getCurrentUser() }
-    val userName = currentUser?.username ?: "Traveler"
+
+    // Get current user for greeting - make it reactive to changes
+
+
 
     // Get all plans count - will update when plansVersion changes (increments when new plan is created)
     val allPlansCount = remember(plansVersion) {
@@ -2011,15 +2015,18 @@ fun ProfileScreen(
     onLogout: () -> Unit = {}
 ) {
     val repo = remember { DI.repo }
-    val user = remember { repo.getCurrentUser() }
+    // Get fresh user data each time the composable recomposes instead of using remember
+    val user = repo.getCurrentUser()
 
     var isEditing by remember { mutableStateOf(false) }
     var isChangingPassword by remember { mutableStateOf(false) }
-    var name by remember { mutableStateOf(user?.name ?: "User") }
-    var username by remember { mutableStateOf(user?.username ?: "username") }
-    var email by remember { mutableStateOf(user?.email ?: "") }
-    var countryCode by remember { mutableStateOf(user?.countryCode ?: "+91") }
-    var phone by remember { mutableStateOf(user?.phone ?: "") }
+
+    // Initialize with current user data, update when user changes
+    var name by remember(user) { mutableStateOf(user?.name ?: "") }
+    var username by remember(user) { mutableStateOf(user?.username ?: "") }
+    var email by remember(user) { mutableStateOf(user?.email ?: "") }
+    var countryCode by remember(user) { mutableStateOf(user?.countryCode ?: "+91") }
+    var phone by remember(user) { mutableStateOf(user?.phone ?: "") }
 
     // Password change fields
     var oldPassword by remember { mutableStateOf("") }
@@ -2110,13 +2117,18 @@ fun ProfileScreen(
             }
 
             Text(
-                username,
+                if (name.isNotBlank()) name else username,
                 style = MaterialTheme.typography.headlineMedium,
                 fontWeight = FontWeight.Bold,
                 color = Color(0xFF1F2937)
             )
 
-            // User Stats Card
+            // User Stats Card - Get actual data from repository
+            val likedDestinations by repo.likedDestinations.collectAsState()
+            val allPlans = remember { repo.getAllPlans() }
+            val allDestinations = remember { repo.getPopularDestinations() }
+            val uniqueCountries = remember { allDestinations.map { it.country }.distinct().size }
+
             Card(
                 modifier = Modifier.fillMaxWidth(),
                 shape = RoundedCornerShape(20.dp),
@@ -2140,46 +2152,46 @@ fun ProfileScreen(
 
                     Divider(color = Color(0xFFE5E7EB))
 
-                    // Stats grid
+                    // Stats grid with actual data
                     Row(
                         modifier = Modifier.fillMaxWidth(),
                         horizontalArrangement = Arrangement.SpaceEvenly
                     ) {
                         Column(horizontalAlignment = Alignment.CenterHorizontally) {
                             Text(
-                                "12",
+                                "${likedDestinations.size}",
                                 style = MaterialTheme.typography.headlineMedium,
                                 fontWeight = FontWeight.Bold,
                                 color = Color(0xFF0EA5E9)
                             )
                             Text(
-                                "Countries",
+                                "Saved Places",
                                 style = MaterialTheme.typography.bodyMedium,
                                 color = Color(0xFF6B7280)
                             )
                         }
                         Column(horizontalAlignment = Alignment.CenterHorizontally) {
                             Text(
-                                "45",
+                                "${allPlans.size}",
                                 style = MaterialTheme.typography.headlineMedium,
                                 fontWeight = FontWeight.Bold,
                                 color = Color(0xFF10B981)
                             )
                             Text(
-                                "Cities",
+                                "Travel Plans",
                                 style = MaterialTheme.typography.bodyMedium,
                                 color = Color(0xFF6B7280)
                             )
                         }
                         Column(horizontalAlignment = Alignment.CenterHorizontally) {
                             Text(
-                                "8",
+                                "$uniqueCountries",
                                 style = MaterialTheme.typography.headlineMedium,
                                 fontWeight = FontWeight.Bold,
                                 color = Color(0xFFF59E0B)
                             )
                             Text(
-                                "Trips",
+                                "Countries",
                                 style = MaterialTheme.typography.bodyMedium,
                                 color = Color(0xFF6B7280)
                             )
@@ -2214,7 +2226,21 @@ fun ProfileScreen(
                             fontWeight = FontWeight.Bold,
                             color = Color(0xFF1F2937)
                         )
-                        IconButton(onClick = { isEditing = !isEditing }) {
+                        IconButton(onClick = {
+                            if (isEditing) {
+                                // Save changes when exiting edit mode
+                                val updatedUser =
+                                    com.runanywhere.startup_hackathon20.data.model.User(
+                                        username = username,
+                                        name = name,
+                                        email = email,
+                                        countryCode = countryCode,
+                                        phone = phone
+                                    )
+                                repo.updateUser(updatedUser)
+                            }
+                            isEditing = !isEditing
+                        }) {
                             Text(
                                 if (isEditing) "✓" else "✏️",
                                 fontSize = 20.sp
@@ -2229,10 +2255,20 @@ fun ProfileScreen(
                         OutlinedTextField(
                             value = name,
                             onValueChange = { name = it },
-                            label = { Text("Name") },
+                            label = { Text("Full Name") },
                             leadingIcon = { Text("👤", fontSize = 20.sp) },
                             modifier = Modifier.fillMaxWidth(),
                             shape = RoundedCornerShape(12.dp)
+                        )
+
+                        OutlinedTextField(
+                            value = username,
+                            onValueChange = { username = it },
+                            label = { Text("Username") },
+                            leadingIcon = { Text("🔑", fontSize = 20.sp) },
+                            modifier = Modifier.fillMaxWidth(),
+                            shape = RoundedCornerShape(12.dp),
+                            enabled = false
                         )
 
                         OutlinedTextField(
@@ -2252,16 +2288,26 @@ fun ProfileScreen(
                             modifier = Modifier.fillMaxWidth(),
                             shape = RoundedCornerShape(12.dp)
                         )
+
+                        OutlinedTextField(
+                            value = countryCode,
+                            onValueChange = { countryCode = it },
+                            label = { Text("Country Code") },
+                            leadingIcon = { Text("🌍", fontSize = 20.sp) },
+                            modifier = Modifier.fillMaxWidth(),
+                            shape = RoundedCornerShape(12.dp)
+                        )
                     } else {
-                        // Display mode
+                        // Display mode with actual user data
+                        ProfileDetailRow("👤", "Full Name", if (name.isNotBlank()) name else "Not set")
                         ProfileDetailRow("🔑", "Username", username)
-                        ProfileDetailRow("📧", "Email", email)
+                        ProfileDetailRow("📧", "Email", if (email.isNotBlank()) email else "Not set")
                         ProfileDetailRow(
                             "📱",
                             "Phone",
-                            if (phone.isNotEmpty()) "$countryCode $phone" else "Not set"
+                            if (phone.isNotBlank()) "$countryCode $phone" else "Not set"
                         )
-                        ProfileDetailRow("🎂", "Member Since", "January 2024")
+                        ProfileDetailRow("🌍", "Country Code", countryCode)
                     }
                 }
             }

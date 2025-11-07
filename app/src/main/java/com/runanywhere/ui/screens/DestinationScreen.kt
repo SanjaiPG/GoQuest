@@ -22,7 +22,7 @@ import com.runanywhere.startup_hackathon20.data.DI
 @Composable
 fun DestinationScreen(destinationId: String, onMakePlan: () -> Unit) {
     val repo = remember { DI.repo }
-    val dest = remember { repo.getDestination(destinationId) } ?: return
+    val dest = remember { repo.getDestinationById(destinationId) } ?: return
     val scrollState = rememberScrollState()
 
     Column(
