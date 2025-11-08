@@ -40,6 +40,7 @@ import androidx.compose.ui.draw.clip
 @Composable
 fun MakePlanScreen(
     destinationId: String? = null,
+    destinationName: String? = null,
     planIdToEdit: String? = null,
     onPlanCreated: (String) -> Unit,
     onNavigateToChat: (() -> Unit)? = null,
@@ -60,7 +61,9 @@ fun MakePlanScreen(
     val isEditMode = planIdToEdit != null
 
     var from by remember { mutableStateOf("") }
-    var to by remember(destination) { mutableStateOf(destination?.name ?: "Paris") }
+    var to by remember(destination, destinationName) {
+        mutableStateOf(destinationName ?: destination?.name ?: "")
+    }
     var startDate by remember { mutableStateOf("") }
     var endDate by remember { mutableStateOf("") }
     var budget by remember { mutableStateOf("50000") }
@@ -233,7 +236,7 @@ fun MakePlanScreen(
                 value = to,
                 onValueChange = { to = it },
                 label = { Text("To (Destination)") },
-                placeholder = { Text("Paris") },
+                placeholder = { Text("") },
                 leadingIcon = {
                     Icon(
                         Icons.Filled.Place,
@@ -250,7 +253,7 @@ fun MakePlanScreen(
                     disabledContainerColor = MaterialTheme.colorScheme.surfaceVariant
                 ),
                 singleLine = true,
-                enabled = false,
+                enabled = true,
                 trailingIcon = {
                     Text(
                         "",
@@ -848,7 +851,7 @@ fun MakePlanScreen(
                     colors = CardDefaults.cardColors(
                         containerColor = androidx.compose.ui.graphics.Color(0xFFFEF3C7)
                     ),
-                    shape = RoundedCornerShape(16.dp),
+                    shape = RoundedCornerShape(12.dp),
                     elevation = CardDefaults.cardElevation(defaultElevation = 4.dp)
                 ) {
                     Row(
@@ -882,6 +885,42 @@ fun MakePlanScreen(
 
             Spacer(Modifier.height(8.dp))
 
+            // Show message if form is complete but model not loaded
+            if (modelLoaded == null && from.isNotBlank() && to.isNotBlank() &&
+                transportMode.isNotBlank() && startDate.isNotBlank() &&
+                endDate.isNotBlank() && days > 0
+            ) {
+                Card(
+                    modifier = Modifier.fillMaxWidth(),
+                    colors = CardDefaults.cardColors(
+                        containerColor = Color(0xFFFEF3C7)
+                    ),
+                    shape = RoundedCornerShape(12.dp)
+                ) {
+                    Row(
+                        modifier = Modifier.padding(16.dp),
+                        verticalAlignment = Alignment.CenterVertically,
+                        horizontalArrangement = Arrangement.spacedBy(12.dp)
+                    ) {
+                        Text("⚠️", fontSize = 28.sp)
+                        Column {
+                            Text(
+                                "Almost Ready!",
+                                style = MaterialTheme.typography.titleSmall,
+                                fontWeight = FontWeight.Bold,
+                                color = Color(0xFF92400E)
+                            )
+                            Text(
+                                "Please load the AI model above to generate your plan",
+                                style = MaterialTheme.typography.bodySmall,
+                                color = Color(0xFF92400E).copy(alpha = 0.8f)
+                            )
+                        }
+                    }
+                }
+                Spacer(Modifier.height(8.dp))
+            }
+
             // Replace the Generate Button section in MakePlanScreen with this:
 
 // Remove the "Model Required" card section since we're using APIs now
@@ -905,7 +944,8 @@ fun MakePlanScreen(
                         onNavigateToChat?.invoke() ?: onPlanCreated(planId)
                     }
                 },
-                enabled = !isLoading && from.isNotBlank() && to.isNotBlank() &&
+                enabled = !isLoading && !isModelLoading && modelLoaded != null &&
+                        from.isNotBlank() && to.isNotBlank() &&
                         transportMode.isNotBlank() && startDate.isNotBlank() &&
                         endDate.isNotBlank() && days > 0,
                 modifier = Modifier
@@ -990,7 +1030,7 @@ fun MakePlanScreen(
                     colors = CardDefaults.cardColors(
                         containerColor = Color(0xFFFEF3C7)
                     ),
-                    shape = RoundedCornerShape(16.dp),
+                    shape = RoundedCornerShape(12.dp),
                     elevation = CardDefaults.cardElevation(defaultElevation = 4.dp)
                 ) {
                     Column(

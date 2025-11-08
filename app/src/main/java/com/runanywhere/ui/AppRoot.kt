@@ -37,6 +37,9 @@ fun AppRoot() {
     // Track selected destination for plan creation
     var selectedDestinationId by remember { mutableStateOf<String?>(null) }
 
+    // Track destination name from search (when not from repository)
+    var selectedDestinationName by remember { mutableStateOf<String?>(null) }
+
     // Track plan ID for editing
     var planIdToEdit by remember { mutableStateOf<String?>(null) }
 
@@ -84,8 +87,9 @@ fun AppRoot() {
                             searchQuery = null
                         },
                         onMakePlan = { destinationName ->
-                            // Use destination name as ID for now
-                            selectedDestinationId = destinationName
+                            // Pass destination name from search results
+                            selectedDestinationId = null
+                            selectedDestinationName = destinationName
                             searchQuery = null
                             previousRoute = AppRoute.Home.route
                             currentRoute = AppRoute.MakePlan.route
@@ -123,6 +127,7 @@ fun AppRoot() {
                         },
                         onMakePlan = { destinationId ->
                             selectedDestinationId = destinationId
+                            selectedDestinationName = null
                             previousRoute = currentRoute  // Save map route
                             currentRoute = AppRoute.MakePlan.route
                         }
@@ -183,6 +188,7 @@ fun AppRoot() {
                     val id = currentRoute.substringAfter("${AppRoute.Destination.base}/")
                     DestinationScreen(destinationId = id, onMakePlan = {
                         selectedDestinationId = id
+                        selectedDestinationName = null
                         previousRoute = currentRoute
                         currentRoute = AppRoute.MakePlan.route
                     })
@@ -191,9 +197,12 @@ fun AppRoot() {
                 currentRoute == AppRoute.MakePlan.route -> {
                     MakePlanScreen(
                         destinationId = selectedDestinationId,
+                        destinationName = selectedDestinationName,
                         planIdToEdit = planIdToEdit,
                         onPlanCreated = { planId ->
                             planIdToEdit = null // Clear edit mode
+                            selectedDestinationId = null // Clear destination
+                            selectedDestinationName = null // Clear destination name
                             currentRoute = "${AppRoute.PlanResult.base}/$planId"
                         },
                         onNavigateToChat = {
@@ -202,6 +211,8 @@ fun AppRoot() {
                         onBack = if (previousRoute != null) {
                             {
                                 planIdToEdit = null // Clear edit mode on back
+                                selectedDestinationId = null // Clear destination
+                                selectedDestinationName = null // Clear destination name
                                 currentRoute = previousRoute!!
                                 previousRoute = null
                             }

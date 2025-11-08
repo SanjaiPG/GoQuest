@@ -381,7 +381,7 @@ object Repository {
                 lat = 48.8566,
                 lng = 2.3522,
                 description = "The City of Light, known for its art, fashion, and culture",
-                imageUrl = "https://images.unsplash.com/photo-1502602898657-3e91760cbb34",
+                imageUrl = "https://plus.unsplash.com/premium_photo-1661919210043-fd847a58522d?ixlib=rb-4.1.0&ixid=M3wxMjA3fDB8MHxwaG90by1wYWdlfHx8fGVufDB8fHx8fA%3D%3D&auto=format&fit=crop&q=80&w=2071",
                 currencyCode = "EUR",
                 rating = 4.8,
                 reviewCount = 12543,
