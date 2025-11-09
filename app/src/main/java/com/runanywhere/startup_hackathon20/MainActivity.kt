@@ -1224,8 +1224,8 @@ fun ChatScreen(
         SnackbarHost(
             hostState = snackbarHostState,
             modifier = Modifier
-                .align(Alignment.BottomCenter)
-                .padding(16.dp)
+                .align(Alignment.TopCenter)
+                .padding(top = 80.dp)
         )
     }
 }
