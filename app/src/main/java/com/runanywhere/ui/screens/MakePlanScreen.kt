@@ -71,6 +71,11 @@ fun MakePlanScreen(
     // Check if we're in edit mode
     val isEditMode = planIdToEdit != null
 
+    // Load plan data if editing
+    val planToEdit = remember(planIdToEdit) {
+        planIdToEdit?.let { repo.getPlanById(it) }
+    }
+
     var from by remember { mutableStateOf("") }
     var to by remember(destination, destinationName) {
         mutableStateOf(destinationName ?: destination?.name ?: "")
@@ -86,6 +91,21 @@ fun MakePlanScreen(
     var expandedTransport by remember { mutableStateOf(false) }
     var showStartDatePicker by remember { mutableStateOf(false) }
     var showEndDatePicker by remember { mutableStateOf(false) }
+
+    // Pre-fill form if editing a plan
+    LaunchedEffect(planToEdit) {
+        planToEdit?.let { plan ->
+            // Extract data from plan title if available
+            // Expected format: "From → To (N nights)"
+            val titleParts = plan.title.split("→", "(")
+            if (titleParts.size >= 2) {
+                from = titleParts[0].trim()
+                to = titleParts[1].trim()
+            }
+            // Note: Other fields like dates, budget, etc. are not stored in Plan model
+            // So we can only pre-fill destination information
+        }
+    }
 
     // Date formatter
     val dateFormatter = remember { SimpleDateFormat("dd MMM yyyy", Locale.getDefault()) }

@@ -12,6 +12,8 @@ import androidx.compose.material.icons.filled.Share
 import androidx.compose.material.icons.filled.Favorite
 import androidx.compose.material.icons.filled.Star
 import androidx.compose.material.icons.filled.LocationOn
+import androidx.compose.material.icons.filled.ContentCopy
+import androidx.compose.material.icons.filled.Edit
 import androidx.compose.material3.*
 import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
@@ -27,6 +29,9 @@ import androidx.compose.runtime.collectAsState
 import com.google.android.gms.maps.model.CameraPosition
 import com.google.android.gms.maps.model.LatLng
 import com.google.maps.android.compose.*
+import kotlinx.coroutines.launch
+import androidx.compose.ui.platform.LocalClipboardManager
+import androidx.compose.ui.text.AnnotatedString
 
 @OptIn(ExperimentalMaterial3Api::class, ExperimentalLayoutApi::class)
 @Composable
@@ -47,8 +52,10 @@ fun PlanResultScreen(
     }
 
     val scrollState = rememberScrollState()
-    var showConfirmationDialog by remember { mutableStateOf(false) }
-    var showExportDialog by remember { mutableStateOf(false) }
+
+    // Snackbar for copy confirmation
+    val snackbarHostState = remember { SnackbarHostState() }
+    val scope = rememberCoroutineScope()
 
     // Use reactive state from repository
     val likedPlans by repo.likedPlans.collectAsState()
@@ -74,204 +81,67 @@ fun PlanResultScreen(
         return
     }
 
-    // Confirmation Dialog - Shows first before export
-    if (showConfirmationDialog) {
-        AlertDialog(
-            onDismissRequest = { showConfirmationDialog = false },
-            icon = {
-                Text("✅", style = MaterialTheme.typography.displaySmall)
-            },
-            title = {
-                Text(
-                    "Confirm Your Plan",
-                    style = MaterialTheme.typography.headlineSmall,
-                    fontWeight = FontWeight.Bold
+    Box(modifier = Modifier.fillMaxSize()) {
+        Column(
+            modifier = Modifier
+                .fillMaxSize()
+                .background(
+                    Brush.verticalGradient(
+                        colors = listOf(
+                            Color(0xFF87CEEB), // Sky blue
+                            Color(0xFFB0E0E6), // Powder blue
+                            Color(0xFFE0F4FF), // Very light blue
+                            Color(0xFFF5FAFF), // Almost white with hint of blue
+                            Color.White,        // Pure white
+                            Color.White         // Pure white continues
+                        ),
+                        startY = 0f,
+                        endY = 3000f
+                    )
                 )
-            },
-            text = {
-                Column {
-                    Text(
-                        "Is this information correct?",
-                        style = MaterialTheme.typography.bodyLarge,
-                        modifier = Modifier.padding(bottom = 8.dp)
-                    )
-                    Text(
-                        "Review your travel plan details before exporting.",
-                        style = MaterialTheme.typography.bodyMedium,
-                        color = Color(0xFF6B7280)
-                    )
-                }
-            },
-            confirmButton = {
-                Button(
-                    onClick = {
-                        showConfirmationDialog = false
-                        showExportDialog = true
-                    },
-                    colors = ButtonDefaults.buttonColors(
-                        containerColor = Color(0xFF10B981)
-                    )
-                ) {
-                    Text("Yes, Export")
-                }
-            },
-            dismissButton = {
-                OutlinedButton(
-                    onClick = {
-                        showConfirmationDialog = false
-                        // Navigate back to form with pre-filled data
-                        onNavigateToEditPlan?.invoke(planId)
-                    },
-                    colors = ButtonDefaults.outlinedButtonColors(
-                        contentColor = Color(0xFFEF4444)
-                    )
-                ) {
-                    Text("No, Edit Plan")
-                }
-            }
-        )
-    }
-
-    // Export Dialog - Only shows after confirmation "Yes"
-    if (showExportDialog) {
-        AlertDialog(
-            onDismissRequest = { showExportDialog = false },
-            icon = {
-                Text("📥", style = MaterialTheme.typography.displaySmall)
-            },
-            title = {
-                Text("Export Your Plan")
-            },
-            text = {
-                Column {
-                    Text("Choose export format:", style = MaterialTheme.typography.bodyLarge)
-                    Spacer(Modifier.height(16.dp))
-
-                    OutlinedButton(
-                        onClick = {
-                            // TODO: Export as PDF logic
-                            showExportDialog = false
-                        },
-                        modifier = Modifier.fillMaxWidth()
-                    ) {
-                        Text("📄 Export as PDF")
-                    }
-
-                    Spacer(Modifier.height(8.dp))
-
-                    OutlinedButton(
-                        onClick = {
-                            // TODO: Export as TXT logic
-                            showExportDialog = false
-                        },
-                        modifier = Modifier.fillMaxWidth()
-                    ) {
-                        Text("📝 Export as Text File")
-                    }
-                }
-            },
-            confirmButton = {
-                TextButton(onClick = { showExportDialog = false }) {
-                    Text("Cancel")
-                }
-            }
-        )
-    }
-
-    Column(
-        modifier = Modifier
-            .fillMaxSize()
-            .background(
-                Brush.verticalGradient(
-                    colors = listOf(
-                        Color(0xFF87CEEB), // Sky blue
-                        Color(0xFFB0E0E6), // Powder blue
-                        Color(0xFFE0F4FF), // Very light blue
-                        Color(0xFFF5FAFF), // Almost white with hint of blue
-                        Color.White,        // Pure white
-                        Color.White         // Pure white continues
-                    ),
-                    startY = 0f,
-                    endY = 3000f
-                )
-            )
-            .verticalScroll(scrollState)
-    ) {
-        // Hero Image Section with Destination
-        if (destination != null) {
-            Box(
-                modifier = Modifier
-                    .fillMaxWidth()
-                    .height(280.dp)
-            ) {
-                // Gradient background (simulating destination image)
+                .verticalScroll(scrollState)
+        ) {
+            // Hero Section with Destination - No colored background, transparent
+            if (destination != null) {
                 Box(
                     modifier = Modifier
-                        .fillMaxSize()
-                        .background(
-                            Brush.verticalGradient(
-                                colors = listOf(
-                                    Color(0xFF0EA5E9),
-                                    Color(0xFF3B82F6),
-                                    Color(0xFF2563EB)
-                                )
-                            )
-                        )
-                )
-
-                // Overlay gradient for text readability
-                Box(
-                    modifier = Modifier
-                        .fillMaxSize()
-                        .background(
-                            Brush.verticalGradient(
-                                colors = listOf(
-                                    Color.Transparent,
-                                    Color.Black.copy(alpha = 0.6f)
-                                ),
-                                startY = 100f
-                            )
-                        )
-                )
-
-                // Content overlay
-                Column(
-                    modifier = Modifier
-                        .fillMaxSize()
-                        .padding(24.dp),
-                    verticalArrangement = Arrangement.SpaceBetween
+                        .fillMaxWidth()
+                        .padding(horizontal = 20.dp, vertical = 40.dp)
                 ) {
-                    // Success badge
-                    Surface(
-                        color = Color(0xFF10B981).copy(alpha = 0.9f),
-                        shape = RoundedCornerShape(20.dp)
+                    Column(
+                        verticalArrangement = Arrangement.spacedBy(16.dp)
                     ) {
-                        Row(
-                            modifier = Modifier.padding(horizontal = 16.dp, vertical = 8.dp),
-                            verticalAlignment = Alignment.CenterVertically,
-                            horizontalArrangement = Arrangement.spacedBy(8.dp)
+                        // Success badge
+                        Surface(
+                            color = Color(0xFF10B981).copy(alpha = 0.95f),
+                            shape = RoundedCornerShape(20.dp),
+                            shadowElevation = 2.dp
                         ) {
-                            Icon(
-                                Icons.Filled.CheckCircle,
-                                contentDescription = null,
-                                tint = Color.White,
-                                modifier = Modifier.size(20.dp)
-                            )
-                            Text(
-                                "Plan Ready",
-                                style = MaterialTheme.typography.labelLarge,
-                                color = Color.White,
-                                fontWeight = FontWeight.Bold
-                            )
+                            Row(
+                                modifier = Modifier.padding(horizontal = 16.dp, vertical = 10.dp),
+                                verticalAlignment = Alignment.CenterVertically,
+                                horizontalArrangement = Arrangement.spacedBy(8.dp)
+                            ) {
+                                Icon(
+                                    Icons.Filled.CheckCircle,
+                                    contentDescription = null,
+                                    tint = Color.White,
+                                    modifier = Modifier.size(22.dp)
+                                )
+                                Text(
+                                    "Itinerary Ready",
+                                    style = MaterialTheme.typography.titleMedium,
+                                    color = Color.White,
+                                    fontWeight = FontWeight.Bold
+                                )
+                            }
                         }
-                    }
 
-                    // Destination info
-                    Column {
+                        // Destination info
                         Text(
                             destination.name,
                             style = MaterialTheme.typography.displaySmall,
-                            color = Color.White,
+                            color = Color(0xFF1F2937),
                             fontWeight = FontWeight.Bold
                         )
                         Row(
@@ -281,49 +151,300 @@ fun PlanResultScreen(
                             Icon(
                                 Icons.Filled.LocationOn,
                                 contentDescription = null,
-                                tint = Color.White,
-                                modifier = Modifier.size(20.dp)
+                                tint = Color(0xFF3B82F6),
+                                modifier = Modifier.size(24.dp)
                             )
                             Text(
                                 destination.country,
                                 style = MaterialTheme.typography.titleLarge,
-                                color = Color.White
+                                color = Color(0xFF6B7280),
+                                fontWeight = FontWeight.Medium
                             )
                         }
                     }
                 }
-            }
-        } else {
-            // Fallback header without destination
-            Surface(
-                modifier = Modifier.fillMaxWidth(),
-                color = Color(0xFF0EA5E9)
-            ) {
-                Column(
-                    Modifier.padding(24.dp),
-                    horizontalAlignment = Alignment.CenterHorizontally
+            } else {
+                // Fallback header without destination - transparent background
+                Box(
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .padding(horizontal = 20.dp, vertical = 40.dp)
                 ) {
-                    Icon(
-                        Icons.Filled.CheckCircle,
-                        contentDescription = null,
-                        modifier = Modifier.size(72.dp),
-                        tint = Color.White
-                    )
-                    Spacer(Modifier.height(16.dp))
-                    Text(
-                        "Your Itinerary is Ready!",
-                        style = MaterialTheme.typography.headlineMedium,
-                        fontWeight = FontWeight.Bold,
-                        color = Color.White
-                    )
+                    Column(
+                        horizontalAlignment = Alignment.CenterHorizontally,
+                        modifier = Modifier.fillMaxWidth()
+                    ) {
+                        Icon(
+                            Icons.Filled.CheckCircle,
+                            contentDescription = null,
+                            modifier = Modifier.size(72.dp),
+                            tint = Color(0xFF10B981)
+                        )
+                        Spacer(Modifier.height(16.dp))
+                        Text(
+                            "Your Itinerary is Ready!",
+                            style = MaterialTheme.typography.headlineMedium,
+                            fontWeight = FontWeight.Bold,
+                            color = Color(0xFF1F2937)
+                        )
+                    }
                 }
             }
-        }
 
-        // Content Section
-        Column(Modifier.padding(20.dp)) {
-            // Rating & Info Card
-            if (destination != null) {
+            // Content Section
+            Column(Modifier.padding(20.dp)) {
+                // Rating & Info Card
+                if (destination != null) {
+                    Card(
+                        modifier = Modifier.fillMaxWidth(),
+                        shape = RoundedCornerShape(20.dp),
+                        colors = CardDefaults.cardColors(
+                            containerColor = Color.White
+                        ),
+                        elevation = CardDefaults.cardElevation(
+                            defaultElevation = 4.dp
+                        )
+                    ) {
+                        Row(
+                            modifier = Modifier
+                                .fillMaxWidth()
+                                .padding(20.dp),
+                            horizontalArrangement = Arrangement.SpaceEvenly
+                        ) {
+                            // Rating
+                            Column(horizontalAlignment = Alignment.CenterHorizontally) {
+                                Row(
+                                    verticalAlignment = Alignment.CenterVertically,
+                                    horizontalArrangement = Arrangement.spacedBy(4.dp)
+                                ) {
+                                    Icon(
+                                        Icons.Filled.Star,
+                                        contentDescription = null,
+                                        tint = Color(0xFFFBBF24),
+                                        modifier = Modifier.size(24.dp)
+                                    )
+                                    Text(
+                                        "4.8",
+                                        style = MaterialTheme.typography.headlineSmall,
+                                        fontWeight = FontWeight.Bold,
+                                        color = Color(0xFF1F2937)
+                                    )
+                                }
+                                Text(
+                                    "Rating",
+                                    style = MaterialTheme.typography.bodyMedium,
+                                    color = Color(0xFF6B7280)
+                                )
+                            }
+
+                            Divider(
+                                modifier = Modifier
+                                    .height(50.dp)
+                                    .width(1.dp),
+                                color = Color(0xFFE5E7EB)
+                            )
+
+                            // Currency
+                            Column(horizontalAlignment = Alignment.CenterHorizontally) {
+                                Text(
+                                    destination.currencyCode,
+                                    style = MaterialTheme.typography.headlineSmall,
+                                    fontWeight = FontWeight.Bold,
+                                    color = Color(0xFF1F2937)
+                                )
+                                Text(
+                                    "Currency",
+                                    style = MaterialTheme.typography.bodyMedium,
+                                    color = Color(0xFF6B7280)
+                                )
+                            }
+
+                            Divider(
+                                modifier = Modifier
+                                    .height(50.dp)
+                                    .width(1.dp),
+                                color = Color(0xFFE5E7EB)
+                            )
+
+                            // Reviews
+                            Column(horizontalAlignment = Alignment.CenterHorizontally) {
+                                Text(
+                                    "2.4K",
+                                    style = MaterialTheme.typography.headlineSmall,
+                                    fontWeight = FontWeight.Bold,
+                                    color = Color(0xFF1F2937)
+                                )
+                                Text(
+                                    "Reviews",
+                                    style = MaterialTheme.typography.bodyMedium,
+                                    color = Color(0xFF6B7280)
+                                )
+                            }
+                        }
+                    }
+
+                    Spacer(Modifier.height(20.dp))
+                }
+
+                // Destination Map Section
+                if (destination != null) {
+                    Text(
+                        "📍 Destination Location",
+                        style = MaterialTheme.typography.titleLarge,
+                        fontWeight = FontWeight.Bold,
+                        modifier = Modifier.padding(bottom = 12.dp),
+                        color = Color(0xFF1F2937)
+                    )
+
+                    Card(
+                        modifier = Modifier
+                            .fillMaxWidth()
+                            .height(250.dp),
+                        shape = RoundedCornerShape(20.dp),
+                        elevation = CardDefaults.cardElevation(
+                            defaultElevation = 4.dp
+                        )
+                    ) {
+                        val destinationPosition = LatLng(destination.lat, destination.lng)
+                        val cameraPositionState = rememberCameraPositionState {
+                            position = CameraPosition.fromLatLngZoom(destinationPosition, 12f)
+                        }
+
+                        GoogleMap(
+                            modifier = Modifier.fillMaxSize(),
+                            cameraPositionState = cameraPositionState,
+                            uiSettings = MapUiSettings(
+                                myLocationButtonEnabled = false,
+                                zoomControlsEnabled = true,
+                                mapToolbarEnabled = false,
+                                compassEnabled = false,
+                                scrollGesturesEnabled = true,
+                                zoomGesturesEnabled = true
+                            ),
+                            properties = MapProperties(
+                                isBuildingEnabled = true,
+                                isMyLocationEnabled = false
+                            )
+                        ) {
+                            Marker(
+                                state = MarkerState(position = destinationPosition),
+                                title = destination.name,
+                                snippet = destination.country
+                            )
+                        }
+                    }
+
+                    Spacer(Modifier.height(20.dp))
+                }
+
+                // Nearby Restaurants Section
+                Text(
+                    "🍽️ Nearby Restaurants",
+                    style = MaterialTheme.typography.titleLarge,
+                    fontWeight = FontWeight.Bold,
+                    modifier = Modifier.padding(bottom = 12.dp),
+                    color = Color(0xFF1F2937)
+                )
+
+                // Restaurant Cards
+                val restaurants = listOf(
+                    Triple("The Golden Fork", "Fine Dining • Italian", "4.9"),
+                    Triple("Spice Garden", "Asian Fusion • Local", "4.7"),
+                    Triple("Coastal Breeze", "Seafood • Mediterranean", "4.8")
+                )
+
+                restaurants.forEach { (name, type, rating) ->
+                    Card(
+                        modifier = Modifier
+                            .fillMaxWidth()
+                            .padding(bottom = 12.dp),
+                        shape = RoundedCornerShape(16.dp),
+                        colors = CardDefaults.cardColors(
+                            containerColor = Color.White
+                        ),
+                        elevation = CardDefaults.cardElevation(
+                            defaultElevation = 2.dp
+                        )
+                    ) {
+                        Row(
+                            modifier = Modifier
+                                .fillMaxWidth()
+                                .padding(16.dp),
+                            verticalAlignment = Alignment.CenterVertically
+                        ) {
+                            // Restaurant icon placeholder
+                            Box(
+                                modifier = Modifier
+                                    .size(60.dp)
+                                    .clip(RoundedCornerShape(12.dp))
+                                    .background(
+                                        Brush.linearGradient(
+                                            colors = listOf(
+                                                Color(0xFFFBBF24),
+                                                Color(0xFFF59E0B)
+                                            )
+                                        )
+                                    ),
+                                contentAlignment = Alignment.Center
+                            ) {
+                                Text(
+                                    "🍴",
+                                    fontSize = 28.sp
+                                )
+                            }
+
+                            Spacer(Modifier.width(16.dp))
+
+                            Column(modifier = Modifier.weight(1f)) {
+                                Text(
+                                    name,
+                                    style = MaterialTheme.typography.titleMedium,
+                                    fontWeight = FontWeight.Bold,
+                                    color = Color(0xFF1F2937)
+                                )
+                                Text(
+                                    type,
+                                    style = MaterialTheme.typography.bodyMedium,
+                                    color = Color(0xFF6B7280)
+                                )
+                            }
+
+                            // Rating badge
+                            Surface(
+                                color = Color(0xFFFEF3C7),
+                                shape = RoundedCornerShape(8.dp)
+                            ) {
+                                Row(
+                                    modifier = Modifier.padding(
+                                        horizontal = 10.dp,
+                                        vertical = 6.dp
+                                    ),
+                                    verticalAlignment = Alignment.CenterVertically,
+                                    horizontalArrangement = Arrangement.spacedBy(4.dp)
+                                ) {
+                                    Icon(
+                                        Icons.Filled.Star,
+                                        contentDescription = null,
+                                        tint = Color(0xFFF59E0B),
+                                        modifier = Modifier.size(16.dp)
+                                    )
+                                    Text(
+                                        rating,
+                                        style = MaterialTheme.typography.labelLarge,
+                                        fontWeight = FontWeight.Bold,
+                                        color = Color(0xFF92400E)
+                                    )
+                                }
+                            }
+                        }
+                    }
+                }
+
+                Spacer(Modifier.height(20.dp))
+
+                // Itinerary Card
+                val clipboardManager = LocalClipboardManager.current
+
                 Card(
                     modifier = Modifier.fillMaxWidth(),
                     shape = RoundedCornerShape(20.dp),
@@ -334,365 +455,93 @@ fun PlanResultScreen(
                         defaultElevation = 4.dp
                     )
                 ) {
-                    Row(
-                        modifier = Modifier
-                            .fillMaxWidth()
-                            .padding(20.dp),
-                        horizontalArrangement = Arrangement.SpaceEvenly
-                    ) {
-                        // Rating
-                        Column(horizontalAlignment = Alignment.CenterHorizontally) {
-                            Row(
-                                verticalAlignment = Alignment.CenterVertically,
-                                horizontalArrangement = Arrangement.spacedBy(4.dp)
-                            ) {
-                                Icon(
-                                    Icons.Filled.Star,
-                                    contentDescription = null,
-                                    tint = Color(0xFFFBBF24),
-                                    modifier = Modifier.size(24.dp)
-                                )
-                                Text(
-                                    "4.8",
-                                    style = MaterialTheme.typography.headlineSmall,
-                                    fontWeight = FontWeight.Bold,
-                                    color = Color(0xFF1F2937)
-                                )
-                            }
+                    Column(Modifier.padding(20.dp)) {
+                        Row(
+                            verticalAlignment = Alignment.CenterVertically,
+                            modifier = Modifier.fillMaxWidth()
+                        ) {
                             Text(
-                                "Rating",
-                                style = MaterialTheme.typography.bodyMedium,
-                                color = Color(0xFF6B7280)
-                            )
-                        }
-
-                        Divider(
-                            modifier = Modifier
-                                .height(50.dp)
-                                .width(1.dp),
-                            color = Color(0xFFE5E7EB)
-                        )
-
-                        // Currency
-                        Column(horizontalAlignment = Alignment.CenterHorizontally) {
-                            Text(
-                                destination.currencyCode,
-                                style = MaterialTheme.typography.headlineSmall,
+                                "📋 Your Travel Plan",
+                                style = MaterialTheme.typography.titleLarge,
                                 fontWeight = FontWeight.Bold,
-                                color = Color(0xFF1F2937)
+                                color = Color(0xFF1F2937),
+                                modifier = Modifier.weight(1f)
                             )
-                            Text(
-                                "Currency",
-                                style = MaterialTheme.typography.bodyMedium,
-                                color = Color(0xFF6B7280)
-                            )
-                        }
-
-                        Divider(
-                            modifier = Modifier
-                                .height(50.dp)
-                                .width(1.dp),
-                            color = Color(0xFFE5E7EB)
-                        )
-
-                        // Reviews
-                        Column(horizontalAlignment = Alignment.CenterHorizontally) {
-                            Text(
-                                "2.4K",
-                                style = MaterialTheme.typography.headlineSmall,
-                                fontWeight = FontWeight.Bold,
-                                color = Color(0xFF1F2937)
-                            )
-                            Text(
-                                "Reviews",
-                                style = MaterialTheme.typography.bodyMedium,
-                                color = Color(0xFF6B7280)
-                            )
-                        }
-                    }
-                }
-
-                Spacer(Modifier.height(20.dp))
-            }
-
-            // Destination Map Section
-            if (destination != null) {
-                Text(
-                    "📍 Destination Location",
-                    style = MaterialTheme.typography.titleLarge,
-                    fontWeight = FontWeight.Bold,
-                    modifier = Modifier.padding(bottom = 12.dp),
-                    color = Color(0xFF1F2937)
-                )
-
-                Card(
-                    modifier = Modifier
-                        .fillMaxWidth()
-                        .height(250.dp),
-                    shape = RoundedCornerShape(20.dp),
-                    elevation = CardDefaults.cardElevation(
-                        defaultElevation = 4.dp
-                    )
-                ) {
-                    val destinationPosition = LatLng(destination.lat, destination.lng)
-                    val cameraPositionState = rememberCameraPositionState {
-                        position = CameraPosition.fromLatLngZoom(destinationPosition, 12f)
-                    }
-
-                    GoogleMap(
-                        modifier = Modifier.fillMaxSize(),
-                        cameraPositionState = cameraPositionState,
-                        uiSettings = MapUiSettings(
-                            myLocationButtonEnabled = false,
-                            zoomControlsEnabled = true,
-                            mapToolbarEnabled = false,
-                            compassEnabled = false,
-                            scrollGesturesEnabled = true,
-                            zoomGesturesEnabled = true
-                        ),
-                        properties = MapProperties(
-                            isBuildingEnabled = true,
-                            isMyLocationEnabled = false
-                        )
-                    ) {
-                        Marker(
-                            state = MarkerState(position = destinationPosition),
-                            title = destination.name,
-                            snippet = destination.country
-                        )
-                    }
-                }
-
-                Spacer(Modifier.height(20.dp))
-            }
-
-            // Nearby Restaurants Section
-            Text(
-                "🍽️ Nearby Restaurants",
-                style = MaterialTheme.typography.titleLarge,
-                fontWeight = FontWeight.Bold,
-                modifier = Modifier.padding(bottom = 12.dp),
-                color = Color(0xFF1F2937)
-            )
-
-            // Restaurant Cards
-            val restaurants = listOf(
-                Triple("The Golden Fork", "Fine Dining • Italian", "4.9"),
-                Triple("Spice Garden", "Asian Fusion • Local", "4.7"),
-                Triple("Coastal Breeze", "Seafood • Mediterranean", "4.8")
-            )
-
-            restaurants.forEach { (name, type, rating) ->
-                Card(
-                    modifier = Modifier
-                        .fillMaxWidth()
-                        .padding(bottom = 12.dp),
-                    shape = RoundedCornerShape(16.dp),
-                    colors = CardDefaults.cardColors(
-                        containerColor = Color.White
-                    ),
-                    elevation = CardDefaults.cardElevation(
-                        defaultElevation = 2.dp
-                    )
-                ) {
-                    Row(
-                        modifier = Modifier
-                            .fillMaxWidth()
-                            .padding(16.dp),
-                        verticalAlignment = Alignment.CenterVertically
-                    ) {
-                        // Restaurant icon placeholder
-                        Box(
-                            modifier = Modifier
-                                .size(60.dp)
-                                .clip(RoundedCornerShape(12.dp))
-                                .background(
-                                    Brush.linearGradient(
-                                        colors = listOf(
-                                            Color(0xFFFBBF24),
-                                            Color(0xFFF59E0B)
+                            IconButton(
+                                onClick = {
+                                    clipboardManager.setText(
+                                        AnnotatedString(
+                                            plan.markdownItinerary.replace(
+                                                "\"\"\"",
+                                                ""
+                                            ).trim()
                                         )
                                     )
-                                ),
-                            contentAlignment = Alignment.Center
-                        ) {
-                            Text(
-                                "🍴",
-                                fontSize = 28.sp
-                            )
-                        }
-
-                        Spacer(Modifier.width(16.dp))
-
-                        Column(modifier = Modifier.weight(1f)) {
-                            Text(
-                                name,
-                                style = MaterialTheme.typography.titleMedium,
-                                fontWeight = FontWeight.Bold,
-                                color = Color(0xFF1F2937)
-                            )
-                            Text(
-                                type,
-                                style = MaterialTheme.typography.bodyMedium,
-                                color = Color(0xFF6B7280)
-                            )
-                        }
-
-                        // Rating badge
-                        Surface(
-                            color = Color(0xFFFEF3C7),
-                            shape = RoundedCornerShape(8.dp)
-                        ) {
-                            Row(
-                                modifier = Modifier.padding(horizontal = 10.dp, vertical = 6.dp),
-                                verticalAlignment = Alignment.CenterVertically,
-                                horizontalArrangement = Arrangement.spacedBy(4.dp)
+                                    scope.launch {
+                                        snackbarHostState.showSnackbar("Itinerary copied to clipboard")
+                                    }
+                                }
                             ) {
                                 Icon(
-                                    Icons.Filled.Star,
-                                    contentDescription = null,
-                                    tint = Color(0xFFF59E0B),
-                                    modifier = Modifier.size(16.dp)
-                                )
-                                Text(
-                                    rating,
-                                    style = MaterialTheme.typography.labelLarge,
-                                    fontWeight = FontWeight.Bold,
-                                    color = Color(0xFF92400E)
+                                    imageVector = Icons.Filled.ContentCopy,
+                                    contentDescription = "Copy Itinerary",
+                                    tint = Color(0xFF3B82F6)
                                 )
                             }
                         }
+
+                        Divider(
+                            color = Color(0xFFE5E7EB),
+                            modifier = Modifier.padding(bottom = 16.dp)
+                        )
+
+                        Text(
+                            plan.title,
+                            style = MaterialTheme.typography.titleMedium,
+                            fontWeight = FontWeight.SemiBold,
+                            color = Color(0xFF3B82F6),
+                            modifier = Modifier.padding(bottom = 12.dp)
+                        )
+
+                        // Display itinerary
+                        Text(
+                            plan.markdownItinerary.replace("\"\"\"", "").trim(),
+                            style = MaterialTheme.typography.bodyMedium,
+                            color = Color(0xFF374151),
+                            lineHeight = 22.sp
+                        )
                     }
                 }
-            }
 
-            Spacer(Modifier.height(20.dp))
+                Spacer(Modifier.height(24.dp))
 
-            // Itinerary Card
-            Card(
-                modifier = Modifier.fillMaxWidth(),
-                shape = RoundedCornerShape(20.dp),
-                colors = CardDefaults.cardColors(
-                    containerColor = Color.White
-                ),
-                elevation = CardDefaults.cardElevation(
-                    defaultElevation = 4.dp
-                )
-            ) {
-                Column(Modifier.padding(20.dp)) {
-                    Text(
-                        "📋 Your Travel Plan",
-                        style = MaterialTheme.typography.titleLarge,
-                        fontWeight = FontWeight.Bold,
-                        modifier = Modifier.padding(bottom = 16.dp),
-                        color = Color(0xFF1F2937)
+                // Edit Plan Button
+                Button(
+                    onClick = { onNavigateToEditPlan?.invoke(planId) },
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .height(56.dp),
+                    shape = RoundedCornerShape(16.dp),
+                    colors = ButtonDefaults.buttonColors(
+                        containerColor = Color(0xFF3B82F6)
                     )
-
-                    Divider(
-                        color = Color(0xFFE5E7EB),
-                        modifier = Modifier.padding(bottom = 16.dp)
+                ) {
+                    Icon(
+                        imageVector = Icons.Filled.Edit,
+                        contentDescription = "Edit Plan",
+                        modifier = Modifier.size(20.dp)
                     )
-
+                    Spacer(Modifier.width(8.dp))
                     Text(
-                        plan.title,
+                        "Edit Plan",
                         style = MaterialTheme.typography.titleMedium,
-                        fontWeight = FontWeight.SemiBold,
-                        color = Color(0xFF3B82F6),
-                        modifier = Modifier.padding(bottom = 12.dp)
-                    )
-
-                    // Display itinerary
-                    Text(
-                        plan.markdownItinerary,
-                        style = MaterialTheme.typography.bodyMedium,
-                        color = Color(0xFF374151),
-                        lineHeight = 22.sp
+                        fontWeight = FontWeight.Bold
                     )
                 }
+
+                Spacer(Modifier.height(24.dp))
             }
-
-            Spacer(Modifier.height(24.dp))
-
-            // Action Buttons
-            Button(
-                onClick = { showConfirmationDialog = true },
-                modifier = Modifier
-                    .fillMaxWidth()
-                    .height(56.dp),
-                shape = RoundedCornerShape(16.dp),
-                colors = ButtonDefaults.buttonColors(
-                    containerColor = Color(0xFF3B82F6)
-                )
-            ) {
-                Text(
-                    "📥",
-                    fontSize = 20.sp
-                )
-                Spacer(Modifier.width(12.dp))
-                Text(
-                    "Export Plan",
-                    style = MaterialTheme.typography.titleMedium,
-                    fontWeight = FontWeight.Bold
-                )
-            }
-
-            Spacer(Modifier.height(12.dp))
-
-            Row(
-                modifier = Modifier.fillMaxWidth(),
-                horizontalArrangement = Arrangement.spacedBy(12.dp)
-            ) {
-                OutlinedButton(
-                    onClick = { /* Share action */ },
-                    modifier = Modifier
-                        .weight(1f)
-                        .height(56.dp),
-                    shape = RoundedCornerShape(16.dp),
-                    colors = ButtonDefaults.outlinedButtonColors(
-                        contentColor = Color(0xFF3B82F6)
-                    )
-                ) {
-                    Icon(
-                        Icons.Filled.Share,
-                        contentDescription = null,
-                        modifier = Modifier.size(20.dp)
-                    )
-                    Spacer(Modifier.width(8.dp))
-                    Text("Share", fontWeight = FontWeight.SemiBold)
-                }
-
-                OutlinedButton(
-                    onClick = {
-                        if (isSaved) {
-                            repo.unlikePlan(planId)
-                        } else {
-                            repo.likePlan(planId)
-                        }
-                    },
-                    modifier = Modifier
-                        .weight(1f)
-                        .height(56.dp),
-                    shape = RoundedCornerShape(16.dp),
-                    colors = if (isSaved) ButtonDefaults.outlinedButtonColors(
-                        contentColor = Color(0xFFEF4444)
-                    ) else ButtonDefaults.outlinedButtonColors(
-                        contentColor = Color(0xFF3B82F6)
-                    )
-                ) {
-                    Icon(
-                        Icons.Filled.Favorite,
-                        contentDescription = null,
-                        modifier = Modifier.size(20.dp)
-                    )
-                    Spacer(Modifier.width(8.dp))
-                    Text(
-                        if (isSaved) "Saved ✓" else "Save",
-                        fontWeight = FontWeight.SemiBold
-                    )
-                }
-            }
-
-            Spacer(Modifier.height(24.dp))
         }
     }
+    SnackbarHost(hostState = snackbarHostState)
 }

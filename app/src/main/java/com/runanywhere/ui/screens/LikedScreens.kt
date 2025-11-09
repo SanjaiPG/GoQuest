@@ -213,49 +213,46 @@ fun AllPlansScreen(onOpenPlan: (String) -> Unit) {
                                     }
                                 }
 
-                                // Bottom white section with details
-                                Column(
+                                // Bottom white section with details and like button
+                                Box(
                                     modifier = Modifier
                                         .fillMaxWidth()
-                                        .padding(20.dp)
+                                        .padding(8.dp)
                                 ) {
                                     Text(
                                         "Tap to view full itinerary",
-                                        style = MaterialTheme.typography.bodyLarge,
+                                        style = MaterialTheme.typography.bodySmall,
                                         color = Color(0xFF6B7280),
-                                        fontSize = 15.sp
+                                        fontSize = 12.sp
                                     )
-                                }
-                            }
 
-                            // Like Button in Top Right Corner
-                            Box(
-                                modifier = Modifier
-                                    .fillMaxWidth()
-                                    .padding(12.dp),
-                                contentAlignment = Alignment.TopEnd
-                            ) {
-                                IconButton(
-                                    onClick = {
-                                        if (isLiked) {
-                                            repo.unlikePlan(p.id)
-                                        } else {
-                                            repo.likePlan(p.id)
-                                        }
-                                    },
-                                    modifier = Modifier.size(48.dp)
-                                ) {
-                                    Icon(
-                                        if (isLiked) Icons.Filled.Favorite else Icons.Filled.FavoriteBorder,
-                                        contentDescription = if (isLiked) "Remove from favorites" else "Add to favorites",
-                                        tint = if (isLiked) Color(0xFFEF4444) else Color.White.copy(
-                                            alpha = 0.9f
-                                        ),
-                                        modifier = Modifier.size(26.dp)
-                                    )
+                                    // Like Button in Bottom Right
+                                    IconButton(
+                                        onClick = {
+                                            if (isLiked) {
+                                                repo.unlikePlan(p.id)
+                                            } else {
+                                                repo.likePlan(p.id)
+                                            }
+                                        },
+                                        modifier = Modifier
+                                            .align(Alignment.BottomEnd)
+                                            .size(36.dp)
+                                            .offset(x = 6.dp, y = 6.dp)
+                                    ) {
+                                        Icon(
+                                            if (isLiked) Icons.Filled.Favorite else Icons.Filled.FavoriteBorder,
+                                            contentDescription = if (isLiked) "Remove from favorites" else "Add to favorites",
+                                            tint = if (isLiked) Color(0xFFEF4444) else Color(
+                                                0xFF9CA3AF
+                                            ),
+                                            modifier = Modifier.size(20.dp)
+                                        )
+                                    }
                                 }
                             }
                         }
+
                     }
                 }
             }
@@ -439,43 +436,40 @@ fun LikedPlansScreen(onOpenPlan: (String) -> Unit) {
                                     }
                                 }
 
-                                // Bottom white section with details
-                                Column(
+                                // Bottom white section with details and like button
+                                Box(
                                     modifier = Modifier
                                         .fillMaxWidth()
-                                        .padding(20.dp)
+                                        .padding(8.dp)
                                 ) {
                                     Text(
                                         "Tap to view full itinerary",
-                                        style = MaterialTheme.typography.bodyLarge,
+                                        style = MaterialTheme.typography.bodySmall,
                                         color = Color(0xFF6B7280),
-                                        fontSize = 15.sp
+                                        fontSize = 12.sp
                                     )
-                                }
-                            }
 
-                            // Wishlist Button in Top Right Corner
-                            Box(
-                                modifier = Modifier
-                                    .fillMaxWidth()
-                                    .padding(12.dp),
-                                contentAlignment = Alignment.TopEnd
-                            ) {
-                                IconButton(
-                                    onClick = {
-                                        repo.unlikePlan(p.id)
-                                    },
-                                    modifier = Modifier.size(48.dp)
-                                ) {
-                                    Icon(
-                                        Icons.Filled.Favorite,
-                                        contentDescription = "Remove from Cart",
-                                        tint = Color(0xFFEF4444),
-                                        modifier = Modifier.size(26.dp)
-                                    )
+                                    // Wishlist Button in Bottom Right
+                                    IconButton(
+                                        onClick = {
+                                            repo.unlikePlan(p.id)
+                                        },
+                                        modifier = Modifier
+                                            .align(Alignment.BottomEnd)
+                                            .size(36.dp)
+                                            .offset(x = 6.dp, y = 6.dp)
+                                    ) {
+                                        Icon(
+                                            Icons.Filled.Favorite,
+                                            contentDescription = "Remove from Cart",
+                                            tint = Color(0xFFEF4444),
+                                            modifier = Modifier.size(20.dp)
+                                        )
+                                    }
                                 }
                             }
                         }
+
                     }
                 }
             }
