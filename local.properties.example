@@ -1,0 +1,13 @@
+## This file is an example of local.properties
+# Copy this file to local.properties and fill in your actual API keys
+#
+# Location of the SDK. This is only used by Gradle.
+# For customization when using a Version Control System, please read the
+# header note.
+sdk.dir=YOUR_ANDROID_SDK_PATH
+
+# API Keys - Replace with your actual keys
+GOOGLE_MAPS_API_KEY=your_google_maps_api_key_here
+GOOGLE_PLACES_API_KEY=your_google_places_api_key_here
+UNSPLASH_ACCESS_KEY=your_unsplash_access_key_here
+OPENAI_API_KEY=your_openai_api_key_here

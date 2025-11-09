@@ -1,8 +1,18 @@
+import java.util.Properties
+import java.io.FileInputStream
+
 plugins {
     alias(libs.plugins.android.application)
     alias(libs.plugins.kotlin.android)
     alias(libs.plugins.kotlin.compose)
     id("com.google.gms.google-services")
+}
+
+// Load local.properties
+val localProperties = Properties()
+val localPropertiesFile = rootProject.file("local.properties")
+if (localPropertiesFile.exists()) {
+    localProperties.load(FileInputStream(localPropertiesFile))
 }
 
 android {
@@ -17,13 +27,30 @@ android {
         versionName = "1.0"
 
 
-        // API Keys - Configured with actual keys
-        buildConfigField("String", "GOOGLE_MAPS_API_KEY", "\"AIzaSyC-bN7yczlepCanvEARrUrcWNRj52Qqnss\"")
-        buildConfigField("String", "GOOGLE_PLACES_API_KEY", "\"AIzaSyBFfBRT5hfES_Eb8jcMyBhvZyUuDLBEwiU\"")
-        buildConfigField("String", "UNSPLASH_ACCESS_KEY", "\"vnmeHmOKXg1yOV-VoeZ6dJnsYpad76DS4CHEJbNFLdo\"")
-        buildConfigField("String", "OPENAI_API_KEY", "\"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\"")
-        
-        manifestPlaceholders["MAPS_API_KEY"] = "AIzaSyC-bN7yczlepCanvEARrUrcWNRj52Qqnss"
+        // API Keys - Read from local.properties
+        buildConfigField(
+            "String",
+            "GOOGLE_MAPS_API_KEY",
+            "\"${localProperties.getProperty("GOOGLE_MAPS_API_KEY", "")}\""
+        )
+        buildConfigField(
+            "String",
+            "GOOGLE_PLACES_API_KEY",
+            "\"${localProperties.getProperty("GOOGLE_PLACES_API_KEY", "")}\""
+        )
+        buildConfigField(
+            "String",
+            "UNSPLASH_ACCESS_KEY",
+            "\"${localProperties.getProperty("UNSPLASH_ACCESS_KEY", "")}\""
+        )
+        buildConfigField(
+            "String",
+            "OPENAI_API_KEY",
+            "\"${localProperties.getProperty("OPENAI_API_KEY", "")}\""
+        )
+
+        manifestPlaceholders["MAPS_API_KEY"] =
+            localProperties.getProperty("GOOGLE_MAPS_API_KEY", "")
         testInstrumentationRunner = "androidx.test.runner.AndroidJUnitRunner"
     }
 
