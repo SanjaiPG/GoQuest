@@ -517,20 +517,16 @@ fun SimplifiedTopBar(
             )
 
             // Settings button
-            Surface(
+            IconButton(
                 onClick = onSettingsClick,
-                modifier = Modifier.size(48.dp),
-                shape = CircleShape,
-                color = Color(0xFF1E40AF)
+                modifier = Modifier.size(48.dp)
             ) {
-                Box(contentAlignment = Alignment.Center) {
-                    Icon(
-                        Icons.Filled.Settings,
-                        contentDescription = "Settings",
-                        tint = Color.White,
-                        modifier = Modifier.size(24.dp)
-                    )
-                }
+                Icon(
+                    Icons.Filled.Settings,
+                    contentDescription = "Settings",
+                    tint = Color.White,
+                    modifier = Modifier.size(24.dp)
+                )
             }
         }
     }
@@ -784,95 +780,68 @@ fun ModernInputWithVoice(
     isEnabled: Boolean,
     isLoading: Boolean
 ) {
-    Surface(
-        modifier = Modifier.fillMaxWidth(),
-        color = Color.White,
-        shadowElevation = 8.dp
+    Row(
+        modifier = Modifier
+            .fillMaxWidth()
+            .padding(16.dp),
+        horizontalArrangement = Arrangement.spacedBy(8.dp),
+        verticalAlignment = Alignment.Bottom
     ) {
-        Row(
+        OutlinedTextField(
+            value = inputText,
+            onValueChange = onInputChange,
             modifier = Modifier
-                .fillMaxWidth()
-                .padding(20.dp),
-            horizontalArrangement = Arrangement.spacedBy(12.dp),
-            verticalAlignment = Alignment.Bottom
-        ) {
-            OutlinedTextField(
-                value = inputText,
-                onValueChange = onInputChange,
-                modifier = Modifier.weight(1f),
-                placeholder = {
-                    Text(
-                        "Type your message here",
-                        color = Color(0xFF94A3B8),
-                        fontSize = 15.sp,
-                        fontWeight = FontWeight.Medium
-                    )
-                },
-                enabled = isEnabled,
-                maxLines = 4,
-                shape = RoundedCornerShape(24.dp),
-                colors = OutlinedTextFieldDefaults.colors(
-                    focusedBorderColor = Color(0xFF2563EB),
-                    unfocusedBorderColor = Color(0xFFCBD5E1),
-                    disabledBorderColor = Color(0xFFE2E8F0),
-                    focusedContainerColor = Color.White,
-                    unfocusedContainerColor = Color.White,
-                    disabledContainerColor = Color(0xFFF8FAFC),
-                    focusedTextColor = Color(0xFF1E293B),
-                    unfocusedTextColor = Color(0xFF1E293B),
-                    disabledTextColor = Color(0xFF94A3B8),
-                    cursorColor = Color(0xFF2563EB)
-                ),
-                textStyle = MaterialTheme.typography.bodyMedium.copy(
-                    fontSize = 15.sp,
-                    fontWeight = FontWeight.Normal,
-                    color = Color(0xFF1E293B)
+                .weight(1f)
+                .heightIn(min = 56.dp, max = 120.dp),
+            placeholder = {
+                Text(
+                    "Type your message here",
+                    color = Color(0xFF94A3B8),
+                    fontSize = 14.sp
                 )
+            },
+            enabled = isEnabled,
+            maxLines = 4,
+            shape = RoundedCornerShape(16.dp),
+            colors = OutlinedTextFieldDefaults.colors(
+                focusedBorderColor = Color(0xFF2563EB),
+                unfocusedBorderColor = Color(0xFFCBD5E1),
+                disabledBorderColor = Color(0xFFE2E8F0),
+                focusedContainerColor = Color.White,
+                unfocusedContainerColor = Color.White,
+                disabledContainerColor = Color(0xFFF8FAFC),
+                focusedTextColor = Color(0xFF1E293B),
+                unfocusedTextColor = Color(0xFF1E293B),
+                disabledTextColor = Color(0xFF94A3B8),
+                cursorColor = Color(0xFF2563EB)
+            ),
+            textStyle = MaterialTheme.typography.bodyMedium.copy(
+                fontSize = 14.sp,
+                color = Color(0xFF1E293B)
             )
+        )
 
-            // Mic/Voice button
-            IconButton(
-                onClick = onVoiceClick,
-                modifier = Modifier.size(56.dp),
-                enabled = isEnabled
-            ) {
-                Surface(
-                    modifier = Modifier.fillMaxSize(),
-                    shape = CircleShape,
-                    color = if (isEnabled) Color(0xFF64748B).copy(alpha = 0.1f) else Color(
-                        0xFFE2E8F0
-                    )
-                ) {
-                    Box(contentAlignment = Alignment.Center) {
-                        MicIcon(
-                            modifier = Modifier.size(24.dp),
-                            tint = if (isEnabled) Color(0xFF64748B) else Color(0xFF94A3B8)
-                        )
-                    }
-                }
-            }
-
-            val isActive = isEnabled && inputText.isNotBlank()
-            FloatingActionButton(
-                onClick = onSend,
-                containerColor = if (isActive) Color(0xFF2563EB) else Color(0xFFE2E8F0),
-                modifier = Modifier.size(56.dp),
-                shape = CircleShape
-            ) {
-                if (isLoading) {
-                    CircularProgressIndicator(
-                        modifier = Modifier.size(26.dp),
-                        strokeWidth = 2.5.dp,
-                        color = Color.White
-                    )
-                } else {
-                    Icon(
-                        Icons.Filled.Send,
-                        contentDescription = "Send",
-                        tint = if (isActive) Color.White else Color(0xFF94A3B8),
-                        modifier = Modifier.size(24.dp)
-                    )
-                }
+        // Send button
+        val isActive = isEnabled && inputText.isNotBlank()
+        FloatingActionButton(
+            onClick = onSend,
+            containerColor = if (isActive) Color(0xFF2563EB) else Color(0xFFE2E8F0),
+            modifier = Modifier.size(56.dp),
+            shape = CircleShape
+        ) {
+            if (isLoading) {
+                CircularProgressIndicator(
+                    modifier = Modifier.size(24.dp),
+                    strokeWidth = 2.dp,
+                    color = Color.White
+                )
+            } else {
+                Icon(
+                    Icons.Filled.Send,
+                    contentDescription = "Send",
+                    tint = if (isActive) Color.White else Color(0xFF94A3B8),
+                    modifier = Modifier.size(22.dp)
+                )
             }
         }
     }
@@ -1081,7 +1050,7 @@ fun ChatScreen(
             Row(
                 modifier = Modifier
                     .fillMaxWidth()
-                    .padding(horizontal = 20.dp, vertical = 16.dp),
+                    .padding(horizontal = 20.dp, vertical = 40.dp),
                 horizontalArrangement = Arrangement.SpaceBetween,
                 verticalAlignment = Alignment.CenterVertically
             ) {
@@ -1098,31 +1067,21 @@ fun ChatScreen(
                 )
 
                 // Settings button
-                Surface(
+                IconButton(
                     onClick = {
                         if (currentModelId == null) {
-                            scope.launch {
-                                snackbarHostState.showSnackbar(
-                                    message = "Loading AI model...",
-                                    duration = SnackbarDuration.Short
-                                )
-                            }
                             viewModel.manualLoadModel()
                         }
                         showModelSelector = !showModelSelector
                     },
-                    modifier = Modifier.size(48.dp),
-                    shape = CircleShape,
-                    color = Color.White.copy(alpha = 0.9f)
+                    modifier = Modifier.size(48.dp)
                 ) {
-                    Box(contentAlignment = Alignment.Center) {
-                        Icon(
-                            Icons.Filled.Settings,
-                            contentDescription = "Settings",
-                            tint = Color(0xFF3B82F6),
-                            modifier = Modifier.size(24.dp)
-                        )
-                    }
+                    Icon(
+                        Icons.Filled.Settings,
+                        contentDescription = "Settings",
+                        tint = Color.Black,
+                        modifier = Modifier.size(24.dp)
+                    )
                 }
             }
 
@@ -1185,12 +1144,6 @@ fun ChatScreen(
                     onDownload = { viewModel.downloadModel(it) },
                     onLoad = {
                         viewModel.loadModel(it)
-                        scope.launch {
-                            snackbarHostState.showSnackbar(
-                                message = "Loading model...",
-                                duration = SnackbarDuration.Short
-                            )
-                        }
                     },
                     onRefresh = { viewModel.refreshModels() }
                 )

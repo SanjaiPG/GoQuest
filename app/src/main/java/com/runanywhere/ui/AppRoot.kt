@@ -200,7 +200,7 @@ fun AppRoot() {
                             planIdToEdit = null // Clear edit mode
                             selectedDestinationId = null // Clear destination
                             selectedDestinationName = null // Clear destination name
-                            currentRoute = "${AppRoute.PlanResult.base}/$planId"
+                            currentRoute = AppRoute.AllPlans.route // Navigate to My Travel Plans
                         },
                         onNavigateToChat = {
                             currentRoute = AppRoute.Chat.route

@@ -45,6 +45,7 @@ import com.google.android.gms.maps.model.LatLng
 import com.google.maps.android.compose.*
 import androidx.compose.ui.graphics.vector.ImageVector
 import androidx.compose.ui.draw.clip
+import kotlinx.coroutines.launch
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
@@ -121,6 +122,9 @@ fun MakePlanScreen(
     val foodOptions = listOf("Veg", "Non-Veg", "Both")
     val transportOptions = listOf("Flight", "Train", "Bus", "Car", "Bike")
 
+    val snackbarHostState = remember { SnackbarHostState() }
+    val scope = rememberCoroutineScope()
+
     Column(
         Modifier
             .fillMaxSize()
@@ -153,7 +157,7 @@ fun MakePlanScreen(
                 Row(
                     modifier = Modifier
                         .fillMaxWidth()
-                        .padding(horizontal = 20.dp, vertical = 20.dp),
+                        .padding(horizontal = 20.dp, vertical = 50.dp),
                     verticalAlignment = Alignment.CenterVertically,
                     horizontalArrangement = Arrangement.spacedBy(16.dp)
                 ) {
@@ -182,12 +186,12 @@ fun MakePlanScreen(
                             if (isEditMode) "Create New Plan" else "Plan Your Trip",
                             style = MaterialTheme.typography.headlineLarge,
                             fontWeight = FontWeight.Bold,
-                            color = Color.White
+                            color = Color.Black
                         )
                         Text(
                             if (isEditMode) "Enter correct details for your trip" else "Let AI create a perfect itinerary for you",
                             style = MaterialTheme.typography.bodyLarge,
-                            color = Color.White.copy(alpha = 0.9f)
+                            color = Color.Black.copy(alpha = 0.7f)
                         )
                     }
                 }
@@ -242,6 +246,7 @@ fun MakePlanScreen(
                 "Journey Details",
                 style = MaterialTheme.typography.titleLarge,
                 fontWeight = FontWeight.Bold,
+                color = Color.Black,
                 modifier = Modifier.padding(top = 8.dp)
             )
 
@@ -322,6 +327,7 @@ fun MakePlanScreen(
                 "Trip Details",
                 style = MaterialTheme.typography.titleLarge,
                 fontWeight = FontWeight.Bold,
+                color = Color.Black,
                 modifier = Modifier.padding(top = 16.dp)
             )
 
@@ -344,7 +350,7 @@ fun MakePlanScreen(
                 shape = RoundedCornerShape(12.dp),
                 colors = OutlinedTextFieldDefaults.colors(
                     focusedBorderColor = MaterialTheme.colorScheme.primary,
-                    unfocusedBorderColor = MaterialTheme.colorScheme.outline,
+                    unfocusedBorderColor = MaterialTheme.colorScheme.outline
                 ),
                 singleLine = true,
                 readOnly = true,
@@ -462,78 +468,84 @@ fun MakePlanScreen(
                 modifier = Modifier.fillMaxWidth(),
                 horizontalArrangement = Arrangement.spacedBy(12.dp)
             ) {
-                Box(modifier = Modifier.weight(1f)) {
-                    OutlinedTextField(
-                        value = if (days > 0) days.toString() else "",
-                        onValueChange = { },
-                        label = { Text("Days") },
-                        placeholder = { Text("Auto") },
-                        leadingIcon = {
-                            Icon(
-                                Icons.Filled.CalendarMonth,
-                                contentDescription = null,
-                                tint = MaterialTheme.colorScheme.primary
+                // Days Card
+                Card(
+                    modifier = Modifier.weight(1f),
+                    shape = RoundedCornerShape(12.dp),
+                    colors = CardDefaults.cardColors(
+                        containerColor = if (days > 0) Color(0xFFDBEAFE) else Color(0xFFF3F4F6)
+                    ),
+                    elevation = CardDefaults.cardElevation(defaultElevation = 2.dp)
+                ) {
+                    Column(
+                        modifier = Modifier
+                            .fillMaxWidth()
+                            .padding(12.dp),
+                        horizontalAlignment = Alignment.CenterHorizontally,
+                        verticalArrangement = Arrangement.spacedBy(6.dp)
+                    ) {
+                        Icon(
+                            Icons.Filled.CalendarMonth,
+                            contentDescription = null,
+                            tint = if (days > 0) Color(0xFF1E40AF) else Color(0xFF9CA3AF),
+                            modifier = Modifier.size(24.dp)
+                        )
+                        if (days > 0) {
+                            Text(
+                                "$days",
+                                style = MaterialTheme.typography.headlineMedium,
+                                fontWeight = FontWeight.Bold,
+                                color = Color(0xFF1E40AF),
+                                fontSize = 20.sp
                             )
-                        },
-                        trailingIcon = {
-                            if (days > 0) {
-                                Icon(
-                                    imageVector = Icons.Filled.CalendarMonth,
-                                    contentDescription = null,
-                                    tint = MaterialTheme.colorScheme.primary,
-                                    modifier = Modifier.size(20.dp)
-                                )
-                            }
-                        },
-                        modifier = Modifier.fillMaxWidth(),
-                        shape = RoundedCornerShape(12.dp),
-                        colors = OutlinedTextFieldDefaults.colors(
-                            focusedBorderColor = MaterialTheme.colorScheme.primary,
-                            unfocusedBorderColor = MaterialTheme.colorScheme.outline,
-                            disabledBorderColor = MaterialTheme.colorScheme.outline,
-                            disabledContainerColor = MaterialTheme.colorScheme.surfaceVariant
-                        ),
-                        singleLine = true,
-                        readOnly = true,
-                        enabled = false
-                    )
+                        }
+                        Text(
+                            "Days",
+                            style = MaterialTheme.typography.labelMedium,
+                            color = if (days > 0) Color(0xFF1E40AF) else Color(0xFF6B7280),
+                            fontSize = 12.sp
+                        )
+                    }
                 }
 
-                Box(modifier = Modifier.weight(1f)) {
-                    OutlinedTextField(
-                        value = if (nights > 0) nights.toString() else "",
-                        onValueChange = { },
-                        label = { Text("Nights") },
-                        placeholder = { Text("Auto") },
-                        leadingIcon = {
-                            Icon(
-                                Icons.Filled.NightsStay,
-                                contentDescription = null,
-                                tint = MaterialTheme.colorScheme.primary
+                // Nights Card
+                Card(
+                    modifier = Modifier.weight(1f),
+                    shape = RoundedCornerShape(12.dp),
+                    colors = CardDefaults.cardColors(
+                        containerColor = if (nights > 0) Color(0xFFDCFCE7) else Color(0xFFF3F4F6)
+                    ),
+                    elevation = CardDefaults.cardElevation(defaultElevation = 2.dp)
+                ) {
+                    Column(
+                        modifier = Modifier
+                            .fillMaxWidth()
+                            .padding(12.dp),
+                        horizontalAlignment = Alignment.CenterHorizontally,
+                        verticalArrangement = Arrangement.spacedBy(6.dp)
+                    ) {
+                        Icon(
+                            Icons.Filled.NightsStay,
+                            contentDescription = null,
+                            tint = if (nights > 0) Color(0xFF065F46) else Color(0xFF9CA3AF),
+                            modifier = Modifier.size(24.dp)
+                        )
+                        if (nights > 0) {
+                            Text(
+                                "$nights",
+                                style = MaterialTheme.typography.headlineMedium,
+                                fontWeight = FontWeight.Bold,
+                                color = Color(0xFF065F46),
+                                fontSize = 20.sp
                             )
-                        },
-                        trailingIcon = {
-                            if (nights > 0) {
-                                Icon(
-                                    imageVector = Icons.Filled.NightsStay,
-                                    contentDescription = null,
-                                    tint = MaterialTheme.colorScheme.primary,
-                                    modifier = Modifier.size(20.dp)
-                                )
-                            }
-                        },
-                        modifier = Modifier.fillMaxWidth(),
-                        shape = RoundedCornerShape(12.dp),
-                        colors = OutlinedTextFieldDefaults.colors(
-                            focusedBorderColor = MaterialTheme.colorScheme.primary,
-                            unfocusedBorderColor = MaterialTheme.colorScheme.outline,
-                            disabledBorderColor = MaterialTheme.colorScheme.outline,
-                            disabledContainerColor = MaterialTheme.colorScheme.surfaceVariant
-                        ),
-                        singleLine = true,
-                        readOnly = true,
-                        enabled = false
-                    )
+                        }
+                        Text(
+                            "Nights",
+                            style = MaterialTheme.typography.labelMedium,
+                            color = if (nights > 0) Color(0xFF065F46) else Color(0xFF6B7280),
+                            fontSize = 12.sp
+                        )
+                    }
                 }
             }
 
@@ -623,6 +635,7 @@ fun MakePlanScreen(
                 "Preferences",
                 style = MaterialTheme.typography.titleLarge,
                 fontWeight = FontWeight.Bold,
+                color = Color.Black,
                 modifier = Modifier.padding(top = 16.dp)
             )
 
@@ -994,8 +1007,15 @@ fun MakePlanScreen(
 
                     // Use API generation (no model loading required!)
                     vm.generatePlanWithAPIs(form) { planId ->
-                        // Navigate to chat to show the generated plan
-                        onNavigateToChat?.invoke() ?: onPlanCreated(planId)
+                        // Show snackbar notification
+                        scope.launch {
+                            snackbarHostState.showSnackbar(
+                                message = "✅ Plan created! View it in My Travel Plans",
+                                duration = SnackbarDuration.Short
+                            )
+                        }
+                        // Navigate to My Travel Plans page
+                        onPlanCreated(planId)
                     }
                 },
                 enabled = !isLoading && !isModelLoading && modelLoaded != null &&
@@ -1161,6 +1181,18 @@ fun MakePlanScreen(
 
             Spacer(Modifier.height(24.dp))
         }
+        SnackbarHost(
+            hostState = snackbarHostState,
+            snackbar = { data ->
+                Snackbar(
+                    snackbarData = data,
+                    containerColor = Color(0xFF10B981),
+                    contentColor = Color.Black,
+                    actionColor = Color.Black,
+                    shape = RoundedCornerShape(12.dp)
+                )
+            }
+        )
     }
 }
 

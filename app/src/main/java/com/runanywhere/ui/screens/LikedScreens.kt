@@ -67,7 +67,7 @@ fun AllPlansScreen(onOpenPlan: (String) -> Unit) {
         Row(
             modifier = Modifier
                 .fillMaxWidth()
-                .padding(horizontal = 24.dp, vertical = 24.dp),
+                .padding(horizontal = 24.dp, vertical = 40.dp),
             verticalAlignment = Alignment.CenterVertically,
             horizontalArrangement = Arrangement.spacedBy(12.dp)
         ) {
@@ -159,64 +159,72 @@ fun AllPlansScreen(onOpenPlan: (String) -> Unit) {
                         )
                     ) {
                         Box(modifier = Modifier.fillMaxWidth()) {
-                            Row(
-                                modifier = Modifier.padding(16.dp),
-                                verticalAlignment = Alignment.CenterVertically
-                            ) {
-                                // Icon with gradient background
+                            Column(modifier = Modifier.fillMaxWidth()) {
+                                // Top colored section with gradient background
                                 Box(
                                     modifier = Modifier
-                                        .size(80.dp)
-                                        .clip(RoundedCornerShape(16.dp))
+                                        .fillMaxWidth()
+                                        .height(120.dp)
                                         .background(
                                             Brush.linearGradient(
                                                 colors = listOf(
-                                                    Color(0xFF0EA5E9),
-                                                    Color(0xFF3B82F6)
+                                                    Color(0xFF87CEEB),
+                                                    Color(0xFF3B82F6),
+                                                    Color(0xFF2563EB)
                                                 )
                                             )
-                                        ),
-                                    contentAlignment = Alignment.Center
+                                        )
+                                        .padding(20.dp)
                                 ) {
-                                    Icon(
-                                        imageVector = Icons.Filled.Flight,
-                                        contentDescription = null,
-                                        tint = Color.White,
-                                        modifier = Modifier.size(48.dp)
-                                    )
-                                }
-
-                                Spacer(Modifier.width(16.dp))
-
-                                Column(modifier = Modifier.weight(1f)) {
-                                    Text(
-                                        p.title,
-                                        style = MaterialTheme.typography.titleLarge,
-                                        fontWeight = FontWeight.Bold,
-                                        color = Color(0xFF1F2937)
-                                    )
-                                    Spacer(Modifier.height(6.dp))
-                                    Text(
-                                        "Tap to view full itinerary",
-                                        style = MaterialTheme.typography.bodyMedium,
-                                        color = Color(0xFF6B7280)
-                                    )
-                                    Spacer(Modifier.height(8.dp))
-                                    Surface(
-                                        color = Color(0xFFDBEAFE),
-                                        shape = RoundedCornerShape(10.dp)
+                                    Column(
+                                        modifier = Modifier.fillMaxSize(),
+                                        verticalArrangement = Arrangement.Center
                                     ) {
                                         Text(
-                                            "Travel Plan",
-                                            modifier = Modifier.padding(
-                                                horizontal = 12.dp,
-                                                vertical = 6.dp
-                                            ),
-                                            style = MaterialTheme.typography.labelMedium,
-                                            color = Color(0xFF1E40AF),
-                                            fontWeight = FontWeight.Bold
+                                            p.title,
+                                            style = MaterialTheme.typography.headlineSmall,
+                                            fontWeight = FontWeight.Bold,
+                                            color = Color.White,
+                                            maxLines = 2,
+                                            fontSize = 22.sp
                                         )
+                                        Spacer(Modifier.height(8.dp))
+                                        Row(
+                                            verticalAlignment = Alignment.CenterVertically,
+                                            horizontalArrangement = Arrangement.spacedBy(8.dp)
+                                        ) {
+                                            Surface(
+                                                color = Color.White.copy(alpha = 0.25f),
+                                                shape = RoundedCornerShape(12.dp)
+                                            ) {
+                                                Text(
+                                                    "Travel Plan",
+                                                    modifier = Modifier.padding(
+                                                        horizontal = 12.dp,
+                                                        vertical = 6.dp
+                                                    ),
+                                                    style = MaterialTheme.typography.labelMedium,
+                                                    color = Color.White,
+                                                    fontWeight = FontWeight.Bold,
+                                                    fontSize = 13.sp
+                                                )
+                                            }
+                                        }
                                     }
+                                }
+
+                                // Bottom white section with details
+                                Column(
+                                    modifier = Modifier
+                                        .fillMaxWidth()
+                                        .padding(20.dp)
+                                ) {
+                                    Text(
+                                        "Tap to view full itinerary",
+                                        style = MaterialTheme.typography.bodyLarge,
+                                        color = Color(0xFF6B7280),
+                                        fontSize = 15.sp
+                                    )
                                 }
                             }
 
@@ -235,14 +243,15 @@ fun AllPlansScreen(onOpenPlan: (String) -> Unit) {
                                             repo.likePlan(p.id)
                                         }
                                     },
-                                    modifier = Modifier
-                                        .size(48.dp)
+                                    modifier = Modifier.size(48.dp)
                                 ) {
                                     Icon(
                                         if (isLiked) Icons.Filled.Favorite else Icons.Filled.FavoriteBorder,
                                         contentDescription = if (isLiked) "Remove from favorites" else "Add to favorites",
-                                        tint = if (isLiked) Color(0xFF3B82F6) else Color(0xFF9CA3AF),
-                                        modifier = Modifier.size(24.dp)
+                                        tint = if (isLiked) Color(0xFFEF4444) else Color.White.copy(
+                                            alpha = 0.9f
+                                        ),
+                                        modifier = Modifier.size(26.dp)
                                     )
                                 }
                             }
@@ -259,8 +268,9 @@ fun LikedPlansScreen(onOpenPlan: (String) -> Unit) {
     val repo = remember { DI.repo }
     val likedPlans by repo.likedPlans.collectAsState()
     val plans = remember(likedPlans) {
-        repo.getAllPlans()
+        repo.getAllPlans().filter { it.id in likedPlans }
     }
+
 
     Column(
         Modifier
@@ -284,7 +294,7 @@ fun LikedPlansScreen(onOpenPlan: (String) -> Unit) {
         Row(
             modifier = Modifier
                 .fillMaxWidth()
-                .padding(horizontal = 24.dp, vertical = 24.dp),
+                .padding(horizontal = 24.dp, vertical = 40.dp),
             verticalAlignment = Alignment.CenterVertically,
             horizontalArrangement = Arrangement.spacedBy(12.dp)
         ) {
@@ -375,62 +385,72 @@ fun LikedPlansScreen(onOpenPlan: (String) -> Unit) {
                         )
                     ) {
                         Box(modifier = Modifier.fillMaxWidth()) {
-                            Row(
-                                modifier = Modifier.padding(16.dp),
-                                verticalAlignment = Alignment.CenterVertically
-                            ) {
-                                // Icon with gradient background
+                            Column(modifier = Modifier.fillMaxWidth()) {
+                                // Top colored section with gradient background
                                 Box(
                                     modifier = Modifier
-                                        .size(80.dp)
-                                        .clip(RoundedCornerShape(16.dp))
+                                        .fillMaxWidth()
+                                        .height(120.dp)
                                         .background(
                                             Brush.linearGradient(
                                                 colors = listOf(
-                                                    Color(0xFF0EA5E9),
-                                                    Color(0xFF3B82F6)
+                                                    Color(0xFFFF6B9D),
+                                                    Color(0xFFC238BE),
+                                                    Color(0xFF8B5CF6)
                                                 )
                                             )
-                                        ),
-                                    contentAlignment = Alignment.Center
+                                        )
+                                        .padding(20.dp)
                                 ) {
-                                    Text(
-                                        "",
-                                        style = MaterialTheme.typography.displayMedium
-                                    )
-                                }
-
-                                Spacer(Modifier.width(16.dp))
-
-                                Column(modifier = Modifier.weight(1f)) {
-                                    Text(
-                                        p.title,
-                                        style = MaterialTheme.typography.titleLarge,
-                                        fontWeight = FontWeight.Bold,
-                                        color = Color(0xFF1F2937)
-                                    )
-                                    Spacer(Modifier.height(6.dp))
-                                    Text(
-                                        "Tap to view full itinerary",
-                                        style = MaterialTheme.typography.bodyMedium,
-                                        color = Color(0xFF6B7280)
-                                    )
-                                    Spacer(Modifier.height(8.dp))
-                                    Surface(
-                                        color = Color(0xFFDBEAFE),
-                                        shape = RoundedCornerShape(10.dp)
+                                    Column(
+                                        modifier = Modifier.fillMaxSize(),
+                                        verticalArrangement = Arrangement.Center
                                     ) {
                                         Text(
-                                            "Saved Plan",
-                                            modifier = Modifier.padding(
-                                                horizontal = 12.dp,
-                                                vertical = 6.dp
-                                            ),
-                                            style = MaterialTheme.typography.labelMedium,
-                                            color = Color(0xFF1E40AF),
-                                            fontWeight = FontWeight.Bold
+                                            p.title,
+                                            style = MaterialTheme.typography.headlineSmall,
+                                            fontWeight = FontWeight.Bold,
+                                            color = Color.White,
+                                            maxLines = 2,
+                                            fontSize = 22.sp
                                         )
+                                        Spacer(Modifier.height(8.dp))
+                                        Row(
+                                            verticalAlignment = Alignment.CenterVertically,
+                                            horizontalArrangement = Arrangement.spacedBy(8.dp)
+                                        ) {
+                                            Surface(
+                                                color = Color.White.copy(alpha = 0.25f),
+                                                shape = RoundedCornerShape(12.dp)
+                                            ) {
+                                                Text(
+                                                    "Saved Plan",
+                                                    modifier = Modifier.padding(
+                                                        horizontal = 12.dp,
+                                                        vertical = 6.dp
+                                                    ),
+                                                    style = MaterialTheme.typography.labelMedium,
+                                                    color = Color.White,
+                                                    fontWeight = FontWeight.Bold,
+                                                    fontSize = 13.sp
+                                                )
+                                            }
+                                        }
                                     }
+                                }
+
+                                // Bottom white section with details
+                                Column(
+                                    modifier = Modifier
+                                        .fillMaxWidth()
+                                        .padding(20.dp)
+                                ) {
+                                    Text(
+                                        "Tap to view full itinerary",
+                                        style = MaterialTheme.typography.bodyLarge,
+                                        color = Color(0xFF6B7280),
+                                        fontSize = 15.sp
+                                    )
                                 }
                             }
 
@@ -445,14 +465,13 @@ fun LikedPlansScreen(onOpenPlan: (String) -> Unit) {
                                     onClick = {
                                         repo.unlikePlan(p.id)
                                     },
-                                    modifier = Modifier
-                                        .size(48.dp)
+                                    modifier = Modifier.size(48.dp)
                                 ) {
                                     Icon(
                                         Icons.Filled.Favorite,
                                         contentDescription = "Remove from Cart",
-                                        tint = Color(0xFF3B82F6),
-                                        modifier = Modifier.size(24.dp)
+                                        tint = Color(0xFFEF4444),
+                                        modifier = Modifier.size(26.dp)
                                     )
                                 }
                             }
@@ -495,7 +514,7 @@ fun LikedDestinationsScreen(onOpenDestination: (String) -> Unit) {
         Row(
             modifier = Modifier
                 .fillMaxWidth()
-                .padding(horizontal = 24.dp, vertical = 24.dp),
+                .padding(horizontal = 24.dp, vertical = 40.dp),
             verticalAlignment = Alignment.CenterVertically,
             horizontalArrangement = Arrangement.spacedBy(12.dp)
         ) {

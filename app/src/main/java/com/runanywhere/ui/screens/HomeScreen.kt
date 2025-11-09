@@ -333,7 +333,7 @@ fun HomeScreen(
                 Row(
                     modifier = Modifier
                         .fillMaxWidth()
-                        .padding(horizontal = 20.dp, vertical = 24.dp),
+                        .padding(horizontal = 20.dp, vertical = 40.dp),
                     horizontalArrangement = Arrangement.SpaceBetween,
                     verticalAlignment = Alignment.CenterVertically
                 ) {
@@ -855,57 +855,50 @@ fun HomeScreen(
                         onOpenDestination = { onOpenDestination(d.id) }
                     )
                 }
-                // View More button
-                if (!showAllDestinations && filtered.size > 4) {
-                    item {
-                        Box(
-                            modifier = Modifier.fillMaxWidth(),
-                            contentAlignment = Alignment.Center
+            }
+
+            // View More/Less button - centered below grid
+            if (filtered.size > 4) {
+                Box(
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .padding(horizontal = 16.dp, vertical = 16.dp),
+                    contentAlignment = Alignment.Center
+                ) {
+                    if (!showAllDestinations) {
+                        Button(
+                            onClick = { showAllDestinations = true },
+                            shape = RoundedCornerShape(16.dp),
+                            colors = ButtonDefaults.buttonColors(
+                                containerColor = Color(0xFF0EA5E9)
+                            ),
+                            modifier = Modifier.width(200.dp)
                         ) {
-                            Button(
-                                onClick = { showAllDestinations = true },
-                                shape = RoundedCornerShape(16.dp),
-                                colors = ButtonDefaults.buttonColors(
-                                    containerColor = Color(0xFF0EA5E9)
-                                ),
-                                modifier = Modifier.fillMaxWidth()
-                            ) {
-                                Text(
-                                    "View More",
-                                    color = Color.White,
-                                    fontWeight = FontWeight.Bold,
-                                    fontSize = 12.sp
-                                )
-                            }
+                            Text(
+                                "View More",
+                                color = Color.White,
+                                fontWeight = FontWeight.Bold,
+                                fontSize = 14.sp
+                            )
                         }
-                    }
-                }
-                // View Less button
-                if (showAllDestinations && filtered.size > 4) {
-                    item {
-                        Box(
-                            modifier = Modifier.fillMaxWidth(),
-                            contentAlignment = Alignment.Center
+                    } else {
+                        OutlinedButton(
+                            onClick = { showAllDestinations = false },
+                            shape = RoundedCornerShape(16.dp),
+                            colors = ButtonDefaults.outlinedButtonColors(
+                                contentColor = Color(0xFF0EA5E9)
+                            ),
+                            modifier = Modifier.width(200.dp)
                         ) {
-                            OutlinedButton(
-                                onClick = { showAllDestinations = false },
-                                shape = RoundedCornerShape(16.dp),
-                                colors = ButtonDefaults.outlinedButtonColors(
-                                    contentColor = Color(0xFF0EA5E9)
-                                ),
-                                modifier = Modifier.fillMaxWidth()
-                            ) {
-                                Text(
-                                    "View Less",
-                                    fontWeight = FontWeight.Bold,
-                                    fontSize = 12.sp
-                                )
-                            }
+                            Text(
+                                "View Less",
+                                fontWeight = FontWeight.Bold,
+                                fontSize = 14.sp
+                            )
                         }
                     }
                 }
             }
-            
 
             Spacer(Modifier.height(16.dp))
         }
@@ -2067,7 +2060,7 @@ fun ProfileScreen(
         Row(
             modifier = Modifier
                 .fillMaxWidth()
-                .padding(horizontal = 20.dp, vertical = 24.dp),
+                .padding(horizontal = 20.dp, vertical = 40.dp),
             horizontalArrangement = Arrangement.Center,
             verticalAlignment = Alignment.CenterVertically
         ) {
