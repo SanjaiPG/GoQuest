@@ -85,7 +85,7 @@ fun MakePlanScreen(
     var budget by remember { mutableStateOf("50000") }
     var people by remember { mutableStateOf("2") }
     var foodCategory by remember { mutableStateOf("Veg") }
-    var transportMode by remember { mutableStateOf("") }
+    var transportMode by remember { mutableStateOf("Flight") }
 
     var expandedFood by remember { mutableStateOf(false) }
     var expandedTransport by remember { mutableStateOf(false) }
@@ -737,7 +737,7 @@ fun MakePlanScreen(
                 onExpandedChange = { expandedTransport = !expandedTransport }
             ) {
                 OutlinedTextField(
-                    value = transportMode.ifEmpty { "Select Transport" },
+                    value = transportMode,
                     onValueChange = {},
                     readOnly = true,
                     label = { Text("Mode of Transport") },
@@ -945,56 +945,6 @@ fun MakePlanScreen(
                 }
             }
 
-            // Loading indicator and helpful tip
-            if (isLoading) {
-                Card(
-                    modifier = Modifier.fillMaxWidth(),
-                    colors = CardDefaults.cardColors(
-                        containerColor = androidx.compose.ui.graphics.Color(0xFFFEF3C7)
-                    ),
-                    shape = RoundedCornerShape(12.dp),
-                    elevation = CardDefaults.cardElevation(defaultElevation = 4.dp)
-                ) {
-                    Row(
-                        modifier = Modifier.padding(20.dp),
-                        verticalAlignment = Alignment.CenterVertically,
-                        horizontalArrangement = Arrangement.spacedBy(16.dp)
-                    ) {
-                        CircularProgressIndicator(
-                            modifier = Modifier.size(40.dp),
-                            color = androidx.compose.ui.graphics.Color(0xFFF59E0B),
-                            strokeWidth = 4.dp
-                        )
-                        Column(modifier = Modifier.weight(1f)) {
-                            Row(
-                                verticalAlignment = Alignment.CenterVertically,
-                                horizontalArrangement = Arrangement.spacedBy(4.dp)
-                            ) {
-                                Icon(
-                                    imageVector = Icons.Filled.Bolt,
-                                    contentDescription = null,
-                                    tint = androidx.compose.ui.graphics.Color(0xFF92400E),
-                                    modifier = Modifier.size(20.dp)
-                                )
-                                Text(
-                                    "AI is working on your plan...",
-                                    style = MaterialTheme.typography.titleMedium,
-                                    fontWeight = FontWeight.Bold,
-                                    color = androidx.compose.ui.graphics.Color(0xFF92400E)
-                                )
-                            }
-                            Spacer(Modifier.height(4.dp))
-                            Text(
-                                "This may take 30-60 seconds on-device",
-                                style = MaterialTheme.typography.bodySmall,
-                                color = androidx.compose.ui.graphics.Color(0xFF92400E)
-                                    .copy(alpha = 0.8f)
-                            )
-                        }
-                    }
-                }
-            }
-
             Spacer(Modifier.height(8.dp))
 
             // Show message if form is complete but model not loaded
@@ -1044,61 +994,60 @@ fun MakePlanScreen(
 
 // Update the Generate Button at the bottom:
 
-            Button(
-                onClick = {
-                    val form = PlanForm(
-                        from = from,
-                        to = to,
-                        startDate = startDate,
-                        nights = nights,
-                        budget = budget.toIntOrNull() ?: 50000,
-                        people = people.toIntOrNull() ?: 2
-                    )
+            if (!isLoading) {
+                Button(
+                    onClick = {
+                        android.util.Log.d("MakePlanScreen", "Generate Plan button clicked!")
+                        android.util.Log.d(
+                            "MakePlanScreen",
+                            "Form data: from=$from, to=$to, startDate=$startDate, nights=$nights, transportMode=$transportMode, days=$days"
+                        )
+                        android.util.Log.d(
+                            "MakePlanScreen",
+                            "Loading states: isLoading=$isLoading, isModelLoading=$isModelLoading, modelLoaded=$modelLoaded"
+                        )
 
-                    // Use API generation (no model loading required!)
-                    vm.generatePlanWithAPIs(form) { planId ->
-                        // Show snackbar notification
-                        scope.launch {
-                            snackbarHostState.showSnackbar(
-                                message = "✅ Plan created! View it in My Travel Plans",
-                                duration = SnackbarDuration.Short
-                            )
+                        val form = PlanForm(
+                            from = from,
+                            to = to,
+                            startDate = startDate,
+                            nights = nights,
+                            budget = budget.toIntOrNull() ?: 50000,
+                            people = people.toIntOrNull() ?: 2
+                        )
+
+                        android.util.Log.d("MakePlanScreen", "Calling generatePlanWithAPIs...")
+                        // Use API generation (no model loading required!)
+                        vm.generatePlanWithAPIs(form) { planId ->
+                            android.util.Log.d("MakePlanScreen", "Plan generated with ID: $planId")
+                            // Show snackbar notification
+                            scope.launch {
+                                snackbarHostState.showSnackbar(
+                                    message = "✅ Plan created! View it in My Travel Plans",
+                                    duration = SnackbarDuration.Short
+                                )
+                            }
+                            // Navigate to My Travel Plans page
+                            onPlanCreated(planId)
                         }
-                        // Navigate to My Travel Plans page
-                        onPlanCreated(planId)
-                    }
-                },
-                enabled = !isLoading && !isModelLoading && modelLoaded != null &&
-                        from.isNotBlank() && to.isNotBlank() &&
-                        transportMode.isNotBlank() && startDate.isNotBlank() &&
-                        endDate.isNotBlank() && days > 0,
-                modifier = Modifier
-                    .fillMaxWidth()
-                    .height(56.dp),
-                shape = RoundedCornerShape(16.dp),
-                colors = ButtonDefaults.buttonColors(
-                    containerColor = if (isLoading) Color(0xFF94A3B8) else Color(0xFF2563EB),
-                    disabledContainerColor = Color(0xFFE2E8F0)
-                ),
-                elevation = ButtonDefaults.buttonElevation(
-                    defaultElevation = 4.dp,
-                    pressedElevation = 8.dp
-                )
-            ) {
-                if (isLoading) {
-                    CircularProgressIndicator(
-                        modifier = Modifier.size(24.dp),
-                        color = Color.White,
-                        strokeWidth = 2.dp
+                    },
+                    enabled = !isLoading && !isModelLoading && modelLoaded != null &&
+                            from.isNotBlank() && to.isNotBlank() &&
+                            transportMode.isNotBlank() && startDate.isNotBlank() &&
+                            endDate.isNotBlank() && days > 0,
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .height(56.dp),
+                    shape = RoundedCornerShape(16.dp),
+                    colors = ButtonDefaults.buttonColors(
+                        containerColor = Color(0xFF2563EB),
+                        disabledContainerColor = Color(0xFFE2E8F0)
+                    ),
+                    elevation = ButtonDefaults.buttonElevation(
+                        defaultElevation = 4.dp,
+                        pressedElevation = 8.dp
                     )
-                    Spacer(Modifier.width(12.dp))
-                    Text(
-                        "AI is working...",
-                        style = MaterialTheme.typography.titleMedium,
-                        fontWeight = FontWeight.Bold,
-                        color = Color.White
-                    )
-                } else {
+                ) {
                     Icon(
                         imageVector = Icons.Filled.AutoAwesome,
                         contentDescription = null,
@@ -1112,6 +1061,114 @@ fun MakePlanScreen(
                         fontWeight = FontWeight.Bold,
                         color = Color.White
                     )
+                }
+            }
+
+            // Debug info card - shows button state
+            if (!isLoading) {
+                val buttonEnabled = !isLoading && !isModelLoading && modelLoaded != null &&
+                        from.isNotBlank() && to.isNotBlank() &&
+                        transportMode.isNotBlank() && startDate.isNotBlank() &&
+                        endDate.isNotBlank() && days > 0
+
+                android.util.Log.d("MakePlanScreen", "Button enabled: $buttonEnabled")
+                android.util.Log.d(
+                    "MakePlanScreen",
+                    "Conditions - isLoading: $isLoading, isModelLoading: $isModelLoading, modelLoaded: $modelLoaded"
+                )
+                android.util.Log.d(
+                    "MakePlanScreen",
+                    "Form validation - from: ${from.isNotBlank()}, to: ${to.isNotBlank()}, transport: ${transportMode.isNotBlank()}, startDate: ${startDate.isNotBlank()}, endDate: ${endDate.isNotBlank()}, days>0: ${days > 0}"
+                )
+
+                // Show missing fields card if button is disabled
+                if (!buttonEnabled) {
+                    Card(
+                        modifier = Modifier.fillMaxWidth(),
+                        colors = CardDefaults.cardColors(
+                            containerColor = Color(0xFFFEF3C7)
+                        ),
+                        shape = RoundedCornerShape(12.dp)
+                    ) {
+                        Column(
+                            modifier = Modifier.padding(16.dp),
+                            verticalArrangement = Arrangement.spacedBy(8.dp)
+                        ) {
+                            Row(
+                                verticalAlignment = Alignment.CenterVertically,
+                                horizontalArrangement = Arrangement.spacedBy(8.dp)
+                            ) {
+                                Icon(
+                                    imageVector = Icons.Filled.Info,
+                                    contentDescription = null,
+                                    tint = Color(0xFF92400E),
+                                    modifier = Modifier.size(24.dp)
+                                )
+                                Text(
+                                    "Complete the form to generate your plan",
+                                    style = MaterialTheme.typography.titleSmall,
+                                    fontWeight = FontWeight.Bold,
+                                    color = Color(0xFF92400E)
+                                )
+                            }
+
+                            Column(
+                                modifier = Modifier.padding(start = 32.dp),
+                                verticalArrangement = Arrangement.spacedBy(4.dp)
+                            ) {
+                                if (from.isBlank()) {
+                                    Text(
+                                        "• Enter departure city (From)",
+                                        style = MaterialTheme.typography.bodySmall,
+                                        color = Color(0xFF92400E)
+                                    )
+                                }
+                                if (to.isBlank()) {
+                                    Text(
+                                        "• Enter destination (To)",
+                                        style = MaterialTheme.typography.bodySmall,
+                                        color = Color(0xFF92400E)
+                                    )
+                                }
+                                if (startDate.isBlank()) {
+                                    Text(
+                                        "• Select start date",
+                                        style = MaterialTheme.typography.bodySmall,
+                                        color = Color(0xFF92400E)
+                                    )
+                                }
+                                if (endDate.isBlank()) {
+                                    Text(
+                                        "• Select end date",
+                                        style = MaterialTheme.typography.bodySmall,
+                                        color = Color(0xFF92400E)
+                                    )
+                                }
+                                if (days == 0) {
+                                    Text(
+                                        "• Ensure end date is after start date",
+                                        style = MaterialTheme.typography.bodySmall,
+                                        color = Color(0xFF92400E)
+                                    )
+                                }
+                                if (modelLoaded == null) {
+                                    Text(
+                                        "• Load AI model (button above)",
+                                        style = MaterialTheme.typography.bodySmall,
+                                        color = Color(0xFF92400E)
+                                    )
+                                }
+                                if (isModelLoading) {
+                                    Text(
+                                        "• Wait for AI model to finish loading",
+                                        style = MaterialTheme.typography.bodySmall,
+                                        color = Color(0xFF92400E)
+                                    )
+                                }
+                            }
+                        }
+                    }
+                    Spacer(Modifier.height(8.dp))
                 }
             }
 
@@ -1159,70 +1216,31 @@ fun MakePlanScreen(
                     shape = RoundedCornerShape(12.dp),
                     elevation = CardDefaults.cardElevation(defaultElevation = 4.dp)
                 ) {
-                    Column(
+                    Row(
                         modifier = Modifier.padding(20.dp),
-                        verticalArrangement = Arrangement.spacedBy(12.dp)
+                        verticalAlignment = Alignment.CenterVertically,
+                        horizontalArrangement = Arrangement.spacedBy(16.dp)
                     ) {
-                        Row(
-                            verticalAlignment = Alignment.CenterVertically,
-                            horizontalArrangement = Arrangement.spacedBy(16.dp)
-                        ) {
-                            CircularProgressIndicator(
-                                modifier = Modifier.size(40.dp),
-                                color = Color(0xFFF59E0B),
-                                strokeWidth = 4.dp
-                            )
-                            Column(modifier = Modifier.weight(1f)) {
-                                Row(
-                                    verticalAlignment = Alignment.CenterVertically,
-                                    horizontalArrangement = Arrangement.spacedBy(4.dp)
-                                ) {
-                                    Icon(
-                                        imageVector = Icons.Filled.Bolt,
-                                        contentDescription = null,
-                                        tint = Color(0xFF92400E),
-                                        modifier = Modifier.size(20.dp)
-                                    )
-                                    Text(
-                                        "AI is creating your perfect itinerary...",
-                                        style = MaterialTheme.typography.titleMedium,
-                                        fontWeight = FontWeight.Bold,
-                                        color = Color(0xFF92400E)
-                                    )
-                                }
-                                Spacer(Modifier.height(4.dp))
-                                Text(
-                                    statusMessage,
-                                    style = MaterialTheme.typography.bodySmall,
-                                    color = Color(0xFF92400E).copy(alpha = 0.8f)
-                                )
-                            }
-                        }
-
-                        LinearProgressIndicator(
-                            modifier = Modifier
-                                .fillMaxWidth()
-                                .height(6.dp)
-                                .clip(RoundedCornerShape(3.dp)),
+                        CircularProgressIndicator(
+                            modifier = Modifier.size(40.dp),
                             color = Color(0xFFF59E0B),
-                            trackColor = Color(0xFFFEF3C7)
+                            strokeWidth = 4.dp
                         )
-
-                        Row(
-                            verticalAlignment = Alignment.CenterVertically,
-                            horizontalArrangement = Arrangement.spacedBy(4.dp)
-                        ) {
-                            Icon(
-                                imageVector = Icons.Filled.Lightbulb,
-                                contentDescription = null,
-                                tint = Color(0xFF92400E),
-                                modifier = Modifier.size(16.dp)
-                            )
+                        Column(modifier = Modifier.weight(1f)) {
                             Text(
-                                "Your plan will include day-by-day activities, hotel recommendations, and budget breakdown",
-                                style = MaterialTheme.typography.bodySmall,
-                                color = Color(0xFF92400E).copy(alpha = 0.7f),
-                                fontSize = 12.sp
+                                "✨ AI is working on your itinerary...",
+                                style = MaterialTheme.typography.titleMedium,
+                                fontWeight = FontWeight.Bold,
+                                color = Color(0xFF92400E)
+                            )
+                            Spacer(Modifier.height(8.dp))
+                            LinearProgressIndicator(
+                                modifier = Modifier
+                                    .fillMaxWidth()
+                                    .height(4.dp)
+                                    .clip(RoundedCornerShape(2.dp)),
+                                color = Color(0xFFF59E0B),
+                                trackColor = Color(0xFFFEF3C7)
                             )
                         }
                     }
