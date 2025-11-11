@@ -392,6 +392,11 @@ GoQuest/
 - Register new user
 - Beautiful gradient background
 
+<div style="display: flex; gap: 10px;">
+  <img src="assets/1.jpg" width="300" height="600" />
+  <img src="assets/2.jpg" width="300" height="600" />
+</div>
+
 ### **2. Home Screen**
 
 - Welcome message with user profile
@@ -399,6 +404,12 @@ GoQuest/
 - Interactive Google Maps preview
 - Famous destinations cards (scrollable)
 - Bottom navigation (Home, Wishlist, Cart, Chatbot)
+
+<div style="display: flex; gap: 10px;">
+  <img src="assets/3.jpg" width="300" height="600" />
+  <img src="assets/4.jpg" width="300" height="600" />
+  <img src="assets/5.jpg" width="300" height="600" />
+</div>
 
 ### **3. Search Results Screen**
 
@@ -416,6 +427,11 @@ GoQuest/
 - Popular reviews section
 - **"Make a Plan"** CTA button
 
+<div style="display: flex; gap: 10px;">
+  <img src="assets/7.jpg" width="300" height="600" />
+  <img src="assets/8.jpg" width="300" height="600" />
+</div>
+
 ### **5. Make a Plan Screen**
 
 - Comprehensive travel planning form:
@@ -429,6 +445,9 @@ GoQuest/
     - **Transport Mode:** Flight/Train/Bus/Car/Bike
 - **Generate Itinerary** button
 - Form validation
+
+<img src="assets/9.jpg" width="300" height="600" />
+
 
 ### **6. Chat Screen (AI Assistant)**
 
@@ -448,6 +467,9 @@ GoQuest/
     - Itinerary text
     - Top attractions cards
 
+<img src="assets/13.jpg" width="300" height="600" />
+
+
 ### **7. Plan Result Screen**
 
 - Success header with checkmark
@@ -459,17 +481,27 @@ GoQuest/
 - Share button
 - Save to Cart button
 
+<div style="display: flex; gap: 10px;">
+  <img src="assets/10.jpg" width="300" height="600" />
+  <img src="assets/11.jpg" width="300" height="600" />
+</div>
+
 ### **8. Wishlist Screen**
 
 - Saved favorite destinations
 - Remove from wishlist
 - Quick access to destination details
 
+<img src="assets/6.jpg" width="300" height="600" />
+
 ### **9. Cart Screen**
 
 - Saved travel plans
 - View/edit saved itineraries
 - Delete plans
+
+<img src="assets/12.jpg" width="300" height="600" />
+
 
 ---
 
